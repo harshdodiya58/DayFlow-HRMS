@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  employeeId  String   @unique
+  email       String   @unique
+  password    String
+  role        Role     @default(EMPLOYEE)
+  isActive    Boolean  @default(true)
+  firstLogin  Boolean  @default(true)
+  
+  // Email Verification
+  emailVerified       Boolean   @default(false)
+  emailVerificationToken String?
+  emailVerificationExpiry DateTime?
+  
+  // Password Reset
+  passwordResetToken   String?
+  passwordResetExpiry  DateTime?
+  
+  // Two-Factor Authentication
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorSecret      String?
+  
+  // Security & Session Management
+  lastLoginAt          DateTime?
+  failedLoginAttempts  Int       @default(0)
+  accountLockedUntil   DateTime?
+  
+  details     EmployeeDetails?
+  salary      SalaryStructure?
+  attendance  Attendance[]
+  leaves      LeaveRequest[]
+  payrolls    Payroll[]
+  messages    Message[]
+  sessions    Session[]
+  auditLogs   AuditLog[]
+  notifications Notification[]
+  notificationPreference NotificationPreference?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmployeeDetails {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  
+  firstName   String
+  lastName    String
+  phone       String?
+  address     String?
+  profilePic  String?
+  jobTitle    String
+  department  String
+  joiningDate DateTime
+}
+
+model SalaryStructure {
+  id                Int    @id @default(autoincrement())
+  userId            Int    @unique
+  user              User   @relation(fields: [userId], references: [id])
+  
+  wage              Float
+  
+  // Computed Components
+  basic             Float
+  hra               Float
+  stdAllowance      Float
+  performanceBonus  Float
+  lta               Float
+  fixedAllowance    Float
+  
+  // Deductions
+  pf                Float
+  profTax           Float
+  
+  netSalary         Float
+}
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  date        DateTime @db.Date // Ensures we query by date easily
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      AttendanceStatus @default(ABSENT)
+}
+
+model LeaveRequest {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  
+  type          LeaveType
+  startDate     DateTime
+  endDate       DateTime
+  reason        String
+  status        LeaveStatus @default(PENDING)
+  adminComments String?
+  
+  appliedAt     DateTime @default(now())
+}
+
+model Payroll {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  month       Int
+  year        Int
+  
+  // Calculation Breakdown (for auditability)
+  daysInMonth        Int      @default(30)
+  attendanceDays     Int      @default(0)
+  weekendDays        Int      @default(0)
+  leaveDays          Int      @default(0)
+  payableDays        Int      @default(0)
+  
+  // Earnings Breakdown
+  grossSalary        Float    @default(0)
+  earnedGross        Float    @default(0)
+  
+  // Deductions Breakdown
+  pfDeduction        Float    @default(0)
+  profTaxDeduction   Float    @default(0)
+  otherDeductions    Float    @default(0)
+  
+  // Legacy fields (kept for backward compatibility)
+  baseWage    Float
+  totalEarnings Float
+  totalDeductions Float
+  netPay      Float
+  
+  status      PayrollStatus @default(GENERATED)
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  content   String
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  isEdited  Boolean   @default(false)
+  editedAt  DateTime?
+  readBy    Int[]     @default([])
+}
+
+model Session {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  token       String   @unique
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  resource    String
+  resourceId  String?
+  details     String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  type        NotificationType
+  title       String
+  message     String
+  link        String?           // Optional link to navigate to
+  isRead      Boolean  @default(false)
+  emailSent   Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+}
+
+model NotificationPreference {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Email preferences
+  emailLeaveUpdates     Boolean @default(true)
+  emailPayrollGenerated Boolean @default(true)
+  emailAnnouncements    Boolean @default(true)
+  emailAttendanceAlerts Boolean @default(false)
+  
+  // In-app preferences
+  inAppLeaveUpdates     Boolean @default(true)
+  inAppPayrollGenerated Boolean @default(true)
+  inAppAnnouncements    Boolean @default(true)
+  inAppAttendanceAlerts Boolean @default(true)
+  
+  updatedAt   DateTime @updatedAt
+}
+
+enum NotificationType {
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  PAYROLL_GENERATED
+  ANNOUNCEMENT
+  ATTENDANCE_REMINDER
+  WELCOME
+  PASSWORD_CHANGED
+  PROFILE_UPDATED
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  SICK
+  PAID
+  UNPAID
+}
+
+enum PayrollStatus {
+  GENERATED
+  PAID
+}
