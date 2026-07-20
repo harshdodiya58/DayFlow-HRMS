@@ -1,49 +1,69 @@
-# 🌊 DayFlow HRMS
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=40&pause=1000&color=2563EB&center=true&vCenter=true&width=600&lines=Welcome+to+DayFlow;The+Next-Gen+HRMS;Manage+Employees+with+Ease;Automated+Payroll+%26+Leaves" alt="Typing SVG" />
 
-A modern Human Resource Management System built with Next.js, React, and PostgreSQL.
+  <p align="center">
+    <strong>A beautifully crafted, modern Human Resource Management System built with Next.js 16, React 19, and PostgreSQL.</strong>
+  </p>
 
-## ✨ Features
+  <p align="center">
+    <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+    <img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  </p>
+</div>
 
-- **Employee Management** - Complete employee lifecycle management with role-based access control
-- **Attendance Tracking** - Real-time check-in/check-out with visual calendar and history
-- **Leave Management** - Apply, approve, and track various types of leaves with email notifications
-- **Payroll System** - Automated salary calculations, monthly processing, and payroll history
-- **Notifications** - In-app notification center with email integration
-- **Internal Messaging** - Real-time chat between admins and employees
-- **Security** - JWT authentication, CSRF protection, audit logging, and rate limiting
+---
 
-## 🛠️ Tech Stack
+## 🚀 Beautiful User Interfaces
 
-- **Frontend**: Next.js 16, React 19, TailwindCSS, Framer Motion
-- **Backend**: Next.js API Routes, JWT, bcrypt
-- **Database**: PostgreSQL with Prisma ORM
-- **Email**: Nodemailer
+### Employee Dashboard
+<div align="center">
+  <img src="./public/readme/dashboard.png" alt="Employee Dashboard" width="800" style="border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+</div>
 
-## 🚀 Getting Started
+### Admin Control Panel
+<div align="center">
+  <img src="./public/readme/admin.png" alt="Admin Dashboard" width="800" style="border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+</div>
+
+---
+
+## ✨ Features That Empower
+
+DayFlow is packed with enterprise-grade features wrapped in a consumer-grade UI.
+
+| Feature | Description |
+| :--- | :--- |
+| 👥 **Employee Management** | Complete lifecycle management with role-based access control. |
+| ⏱️ **Attendance Tracking** | Real-time check-in/check-out with visual calendar history. |
+| 🏖️ **Leave Management** | Apply, approve, and track various types of leaves seamlessly. |
+| 💸 **Payroll System** | Automated salary calculations and comprehensive payroll history. |
+| 🔔 **Smart Notifications** | In-app notification center paired with email integration. |
+| 💬 **Internal Helpdesk** | Real-time chat & ticketing between admins and employees. |
+| 🤖 **AI Assistant** | Integrated AI chatbot to help employees find company policies instantly. |
+| 🔒 **Enterprise Security** | JWT auth, CSRF protection, audit logging, and rate limiting. |
+
+---
+
+## 🛠️ Quick Start Guide
 
 ### Prerequisites
+Make sure you have installed **Node.js 18+** and **PostgreSQL 15+**.
 
-- Node.js 18.x or higher
-- PostgreSQL 15.x or higher
-- npm or yarn
-
-### Installation
-
-1. Clone the repository
+### 1. Clone & Install
 ```bash
 git clone https://github.com/harshdodiya58/DayFlow-HRMS.git
 cd DayFlow-HRMS
-```
-
-2. Install dependencies
-```bash
 npm install
 ```
 
-3. Configure environment variables
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
 ```env
 DATABASE_URL="postgresql://username:password@localhost:5432/dayflow"
-JWT_SECRET="your-secret-key"
+JWT_SECRET="your-super-secret-key"
 EMAIL_HOST="smtp.gmail.com"
 EMAIL_PORT=587
 EMAIL_USER="your-email@gmail.com"
@@ -51,53 +71,38 @@ EMAIL_PASSWORD="your-app-password"
 EMAIL_FROM="DayFlow HRMS <noreply@dayflow.com>"
 ```
 
-4. Setup database
+### 3. Database Setup
 ```bash
 npx prisma migrate dev
 npx prisma generate
 ```
 
-5. Run the development server
+### 4. Launch DayFlow
 ```bash
 npm run dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### First Time Setup
-
-1. Navigate to `/auth/setup` to create the first admin account
-2. Complete email verification
-3. Login and start managing your organization!
-
-## 📁 Project Structure
-
-```
-src/
-├── app/
-│   ├── admin/          # Admin dashboard and management pages
-│   ├── api/            # API routes for all features
-│   ├── auth/           # Authentication pages
-│   └── dashboard/      # Employee dashboard pages
-├── components/         # Reusable React components
-├── lib/                # Utility functions (auth, email, prisma)
-└── middleware.js       # Authentication & CSRF middleware
-```
-
-## 🔐 Security
-
-- JWT-based authentication with HTTP-only cookies
-- CSRF protection using double-submit cookie pattern
-- Password hashing with bcrypt
-- Rate limiting and account lockout
-- Email verification for new accounts
-- Comprehensive audit logging
-
-## 📝 License
-
-MIT License - feel free to use this project for learning or production.
+Navigate to [http://localhost:3000](http://localhost:3000) and embark on a seamless HR experience! 🎉
 
 ---
 
-**Built with ❤️ using Next.js**
+## 📁 Architecture Overview
 
+```text
+src/
+├── app/
+│   ├── admin/          # Admin dashboard & management panels
+│   ├── api/            # Next.js API Routes (Backend)
+│   ├── auth/           # Secure authentication flows
+│   └── dashboard/      # Employee self-service dashboard
+├── components/         # Reusable, animated UI components
+├── lib/                # Utilities (auth, email, prisma)
+└── middleware.js       # Global authentication & CSRF protection
+```
+
+---
+
+<div align="center">
+  <b>Built with ❤️ for modern workplaces.</b><br><br>
+  <img src="https://forthebadge.com/images/badges/built-with-love.svg" alt="Built with Love" />
+  <img src="https://forthebadge.com/images/badges/uses-js.svg" alt="Uses JS" />
+</div>
