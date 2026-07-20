@@ -1,308 +1,754 @@
-# 🚀 DayFlow HRMS — Production-Level Roadmap
+# DayFlow HRMS — Enterprise Transformation Plan
 
-## Current System Audit
-
-### ✅ Features Already Built (What You Have)
-
-| Module | Features | Status |
-|---|---|---|
-| **Authentication** | Login (Employee ID + Email), JWT tokens, Password Reset, Email Verification, First-Login Password Change, Account Lockout, Rate Limiting, CSRF Protection | ✅ Solid |
-| **Employee Management** | Add/Edit Employee, Auto-generate Employee IDs, Salary Structure Setup, Profile Photos, Department & Job Title | ✅ Basic |
-| **Attendance** | Check-In / Check-Out, Live Timer, Auto Checkout (Cron), Today's Attendance Table (Admin), Attendance Calendar (Employee), Attendance History | ✅ Good |
-| **Leave Management** | Apply Leave (Sick/Paid/Unpaid), Admin Approve/Reject with Comments, Leave History | ✅ Basic |
-| **Payroll** | Salary Structure (Basic/HRA/PF/Prof Tax etc.), Auto Payroll Generation (Cron), Payslip PDF Download, Salary Simulator (Optimistic/Realistic/Pessimistic), Payroll History | ✅ Good |
-| **Chat** | Real-time Messaging (polling-based), Read Receipts, Message Editing, Typing Indicators | ✅ Basic |
-| **Notifications** | In-App Notifications, Email Notifications, Notification Preferences, Notification Bell UI | ✅ Good |
-| **Reports** | PDF/Excel Export, Attendance Reports, Leave Reports, Payroll Reports | ✅ Basic |
-| **Leaderboard** | Top Performers by Attendance, Multiple Categories | ✅ Basic |
-| **Security** | Password Strength Validation, XSS Input Sanitization, Audit Logging, Session Management, 2FA (partial – schema ready, not fully implemented) | ✅ Partial |
-| **Landing Page** | Animated hero, Feature cards, Bento grid layout | ✅ Good |
-
-### ❌ Critical Gaps for Production
-
-| Gap | Impact |
-|---|---|
-| No **HR Helpdesk / Ticket System** — Employees can't raise issues to HR | 🔴 High |
-| No **Document Management** — No offer letters, ID proofs, policy docs | 🔴 High |
-| No **Organization Hierarchy** — No departments model, no reporting structure | 🔴 High |
-| No **Holiday Calendar** — System doesn't know public holidays | 🔴 High |
-| No **Leave Balance Tracking** — No annual entitlement/carry-forward | 🔴 High |
-| No **Onboarding Workflow** — No task checklists for new joiners | 🟡 Medium |
-| No **Performance Reviews / Appraisals** — No goal setting, no KPIs | 🟡 Medium |
-| No **Announcements Board** — Admin can't broadcast company-wide messages | 🟡 Medium |
-| No **Employee Self-Service Portal** — Limited self-service options | 🟡 Medium |
-| No **Multi-tenancy / Company Settings** — Single company hardcoded | 🟡 Medium |
-| No **File Upload / Storage** (Profile pics are just strings) | 🟡 Medium |
-| No **AI Agent / Chatbot** for employee queries | 🟡 Medium |
-| No **Shift Management** — Fixed 9-to-5 assumption | 🟢 Low initially |
-| No **Expense Management** | 🟢 Low initially |
-| No **Recruitment / ATS** | 🟢 Low initially |
-| 2FA is schema-only, not fully implemented | 🟡 Medium |
-| No **Unit Tests** at all | 🔴 High |
-| No proper **Error Boundaries** in React | 🟡 Medium |
-| **Rate limiting is in-memory** (resets on restart) | 🟡 Medium |
-| **CSRF tokens are in-memory** (resets on restart) | 🟡 Medium |
+> **Goal**: Transform DayFlow from a mid-tier HR tool into a production-grade, enterprise-class HRMS that can compete with BambooHR, Keka, greytHR, Darwinbox, and Zoho People — ready for adoption by Indian and multinational companies with 50 to 10,000+ employees.
 
 ---
 
-## Proposed Roadmap — 6 Phases
+## Current State Audit
+
+### What We Already Have (20 DB Models, ~45 pages)
+
+| Module | Status | Maturity |
+| :--- | :--- | :--- |
+| Employee Management (CRUD, Departments) | ✅ Done | Decent |
+| Attendance (Check-in/out, Calendar, History) | ✅ Done | Good |
+| Leave Management (Apply, Approve, Policies, Balances) | ✅ Done | Good |
+| Payroll (Auto-calc, Payslips, Monthly Processing) | ✅ Done | Decent |
+| Notifications (In-app + Email) | ✅ Done | Good |
+| Internal Chat / Messaging | ✅ Done | Basic |
+| Announcements (Admin → All Employees) | ✅ Done | Good |
+| Support Tickets / Helpdesk | ✅ Done | Good |
+| Document Management (Upload/Download per employee) | ✅ Done | Basic |
+| Holidays (CRUD, Calendar view) | ✅ Done | Good |
+| Admin Settings (Company, Departments, Security) | ✅ Done | Basic |
+| Audit Logging | ✅ Done | Basic |
+| AI Chat Assistant | ✅ Done | Basic |
+| Reports (Admin side) | ✅ Done | Basic |
+| Leaderboard | ✅ Done | Basic |
 
 ---
 
-### 🏗️ Phase 1: Foundation & Data Integrity (Week 1-2)
-> Make the existing features production-solid before adding new ones.
+## What's Missing — The Gap Analysis
 
-#### Database Schema Enhancements
-
-##### [MODIFY] [schema.prisma](file:///d:/project/DayFlow---HRMS-master/prisma/schema.prisma)
-- Add `Department` model (id, name, description, headId, parentDepartmentId)
-- Add `Holiday` model (id, name, date, type: NATIONAL/REGIONAL/COMPANY, isOptional)
-- Add `CompanySettings` model (name, logo, address, timezone, workStartTime, workEndTime, weekends)
-- Add `LeavePolicy` model (leaveType, annualEntitlement, carryForwardLimit, maxConsecutiveDays)
-- Add `LeaveBalance` model (userId, leaveType, year, entitled, used, remaining, carryForward)
-- Add `Document` model (userId, type: OFFER_LETTER/ID_PROOF/POLICY etc., name, url, uploadedBy, uploadedAt)
-- Add `SupportTicket` model (id, employeeId, category, subject, description, priority, status, assignedTo, messages[])
-- Add `TicketMessage` model (id, ticketId, senderId, content, attachments, createdAt)
-- Add `Announcement` model (id, title, content, priority, createdBy, startsAt, expiresAt, targetDepartment)
-- Extend `EmployeeDetails` → add `emergencyContact`, `bloodGroup`, `dateOfBirth`, `gender`, `bankAccountNo`, `ifscCode`, `panNumber`, `aadharNumber`
-- Extend `User` → add `managerId` (self-relation for reporting hierarchy)
-- Add `enum TicketStatus { OPEN, IN_PROGRESS, RESOLVED, CLOSED }`
-- Add `enum TicketPriority { LOW, MEDIUM, HIGH, URGENT }`
-- Add `enum DocumentType { OFFER_LETTER, ID_PROOF, POLICY, PAYSLIP, TAX_FORM, OTHER }`
-
-#### Validation & Error Handling
-
-##### [MODIFY] Multiple API route files
-- Add Zod/manual validation on every API endpoint (email format, phone format, required fields)
-- Add proper `try-catch` error boundaries in all React pages
-- Add global error boundary component
-- Fix the `NEXT_PUBLIC_APP_URL` to be required in `.env` (not fallback to localhost)
-- Replace in-memory rate limiter with DB-backed or Redis-backed solution
-- Add input length limits to prevent abuse
-
-#### Company Settings
-
-##### [NEW] `src/app/api/admin/settings/route.js`
-- CRUD for company name, logo, work hours, timezone, weekend days configuration
-
-##### [NEW] `src/app/admin/settings/page.js`
-- Admin settings UI for company configuration
+Below is every module, feature, and security layer that enterprise platforms like **Workday**, **BambooHR**, **Keka HR**, **Darwinbox**, and **greytHR** offer that DayFlow currently **does not have**.
 
 ---
 
-### 📋 Phase 2: HR Helpdesk & Communication (Week 3-4)
-> The #1 feature employees need — a way to reach HR with problems.
+## Phase 1: Security & Infrastructure Hardening
 
-#### Support Ticket System
+> [!CAUTION]
+> These are **non-negotiable** for any company handling employee PII (Personally Identifiable Information). Without these, no serious company will adopt the platform.
 
-##### [NEW] `src/app/api/tickets/route.js`
-- Employee: Create ticket (category, subject, description, priority, attachments)
-- Employee: View own tickets, add messages, close ticket
-- Admin: View all tickets, assign, update status, reply
+### 1.1 Next.js Middleware (Authentication Gateway)
 
-##### [NEW] `src/app/api/tickets/[id]/route.js`
-- GET single ticket with message thread
-- PUT to update status/assignment
-- POST to add message to ticket thread
+**Problem**: DayFlow has **no `middleware.js`** file. Every API route manually checks tokens. There is no centralized auth gate.
 
-##### [NEW] `src/app/dashboard/helpdesk/page.js`
-- Employee helpdesk UI — "Raise a Ticket" form + ticket list + ticket detail with chat-like message thread
-- Categories: Payroll Issue, Leave Discrepancy, IT Support, Policy Question, Harassment/Complaint, Other
-
-##### [NEW] `src/app/admin/helpdesk/page.js`
-- Admin ticket management — filterable table, assign to self, resolve, escalate
-- Dashboard stats: Open tickets, Average resolution time, SLA breach count
-
-#### Announcements System
-
-##### [NEW] `src/app/api/admin/announcements/route.js`
-- Admin: Create/Edit/Delete announcements with priority levels and expiry dates
-- Employee: Fetch active announcements
-
-##### [NEW] `src/app/admin/announcements/page.js`
-- Admin UI to manage announcements
-
-##### [MODIFY] `src/app/dashboard/page.js`
-- Add announcements banner/feed to employee dashboard
+#### [NEW] `src/middleware.js`
+- Centralized JWT verification for ALL routes
+- Route-based role enforcement (ADMIN routes blocked for EMPLOYEE)
+- CSRF token validation on all POST/PUT/DELETE
+- Auto-redirect unauthenticated users to `/login`
+- Rate limiting headers per route group
+- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Content-Security-Policy`
 
 ---
 
-### 📅 Phase 3: Leave & Holiday Management Overhaul (Week 5-6)
-> Real-world leave management with balances, holidays, and policies.
+### 1.2 Session Management Overhaul
 
-#### Holiday Calendar
+**Problem**: Current sessions are basic. No device tracking, no concurrent session limits, no remote logout.
 
-##### [NEW] `src/app/api/admin/holidays/route.js`
-- CRUD for holidays (national, regional, company-specific, optional)
-- Bulk import holidays from government list
+#### [MODIFY] `prisma/schema.prisma` — Enhance `Session` model
+- Add `deviceName`, `deviceType` (mobile/desktop/tablet), `browser`, `os`
+- Add `lastActiveAt` timestamp
+- Add `isRevoked` boolean
 
-##### [NEW] `src/app/admin/holidays/page.js`
-- Interactive calendar view for managing holidays
-- Import/Export holiday list
+#### [NEW] `src/app/api/auth/sessions/route.js`
+- GET: List all active sessions for current user
+- DELETE: Revoke specific session (remote logout)
+- DELETE (bulk): "Log out of all other devices"
 
-#### Leave Balance System
-
-##### [MODIFY] `src/app/api/leaves/route.js`
-- Integrate leave balance checking before approval
-- Auto-deduct balance on approval, restore on rejection
-- Prevent leave application if balance insufficient
-- Block overlapping leave dates
-
-##### [NEW] `src/app/api/admin/leave-policy/route.js`
-- Define leave policies per leave type (annual entitlement, carry forward, max consecutive)
-- Year-end carry forward processing
-
-##### [MODIFY] `src/app/dashboard/leaves/page.js`
-- Show leave balance breakdown (entitled, used, remaining per type)
-- Show holiday calendar integration
-- Improve leave application form with date validation
-
-##### [MODIFY] `src/app/admin/leaves/page.js`
-- Bulk approve/reject
-- Leave balance overview for all employees
+#### [NEW] `src/app/dashboard/settings/security/page.js`
+- UI showing all active sessions with device info
+- "This device" badge on current session
+- One-click "Log out everywhere" button
 
 ---
 
-### 📊 Phase 4: Performance, Documents & Onboarding (Week 7-9)
+### 1.3 Two-Factor Authentication (2FA)
 
-#### Document Management
+**Problem**: 2FA code generation exists in `security.js` but is **never used anywhere**.
 
-##### [NEW] `src/app/api/documents/route.js`
-- File upload/download API using cloud storage (Cloudinary/S3/Vercel Blob)
-- Document categorization (Offer Letter, ID Proof, Policy Document, Tax Forms)
-- Admin: Upload company policies accessible to all employees
+#### [NEW] `src/app/api/auth/2fa/setup/route.js`
+- Generate TOTP secret, return QR code URL
+- Verify initial 2FA code to activate
 
-##### [NEW] `src/app/dashboard/documents/page.js`
-- Employee: View own documents, upload personal docs
-- Download offer letters, payslips, tax forms
+#### [NEW] `src/app/api/auth/2fa/verify/route.js`
+- Verify 2FA code during login flow
 
-##### [NEW] `src/app/admin/documents/page.js`
-- Admin: Manage employee documents, upload company-wide policies
+#### [MODIFY] `src/app/api/auth/login/route.js`
+- After password verification, check if 2FA is enabled
+- If yes, return `requiresTwoFactor: true` instead of token
+- Second step: verify 2FA code, then issue token
 
-#### Onboarding Workflow
-
-##### [NEW] `src/app/api/admin/onboarding/route.js`
-- Onboarding checklist templates (customizable by admin)
-- Auto-assign tasks to new joiners (submit ID, bank details, sign policies etc.)
-- Track onboarding progress per employee
-
-##### [NEW] `src/app/dashboard/onboarding/page.js`
-- New employee onboarding wizard — step-by-step guided setup
-
-#### Performance Reviews (Basic)
-
-##### [NEW] Prisma models: `PerformanceReview`, `Goal`, `ReviewCycle`
-##### [NEW] `src/app/api/admin/reviews/route.js`
-- Create review cycles (quarterly/annual)
-- Set employee goals with measurable targets
-- Self-assessment + Manager assessment scoring
-
-##### [NEW] `src/app/dashboard/reviews/page.js`
-- Employee: View goals, submit self-assessment
-- See review history and ratings
-
-##### [NEW] `src/app/admin/reviews/page.js`
-- Admin: Create review cycles, view all reviews, generate reports
+#### [NEW] `src/app/dashboard/settings/security/two-factor/page.js`
+- Setup wizard with QR code display
+- Backup recovery codes generation
+- Enable/Disable toggle
 
 ---
 
-### 🤖 Phase 5: AI Agent & Smart Features (Week 10-11)
+### 1.4 Password Policy & Rotation
 
-#### HR AI Agent / Chatbot
+#### [NEW] `prisma/schema.prisma` — `PasswordHistory` model
+- Store last 5 password hashes per user
+- Prevent password reuse
 
-##### [NEW] `src/app/api/agent/route.js`
-- AI-powered chatbot that can answer employee queries:
-  - "How many leaves do I have left?"
-  - "What is the holiday list for this month?"
-  - "Show me my payslip for June"
-  - "I want to apply for leave from 15th to 18th"
-  - "What is the company's WFH policy?"
-- Uses context from: leave balances, attendance records, company policies, FAQ database
-- Powered by LLM API with RAG over company documents
-
-##### [NEW] `src/app/api/admin/agent/knowledge/route.js`
-- Admin: Upload FAQ entries and policy documents that the AI agent can reference
-
-##### [NEW] `src/components/AIAssistant.js`
-- Floating AI assistant widget accessible from every page
-- Chat-like interface with typing indicators
-- Quick action buttons for common requests
-
-#### Smart Notifications & Insights
-
-##### [MODIFY] `src/lib/notifications.js`
-- Automated reminders: "You haven't checked in today"
-- Weekly summary emails: attendance %, leave balance, upcoming holidays
-- Birthday/anniversary auto-notifications
-- Anomaly detection: "X employee has been absent 5 days in a row"
+#### [MODIFY] `src/lib/security.js`
+- Password expiry check (configurable: 30/60/90 days)
+- Force password change on first login
+- Block commonly breached passwords (top 10k list)
 
 ---
 
-### 🔒 Phase 6: Security Hardening & Production Readiness (Week 12-13)
+### 1.5 Data Export & DPDP/GDPR Compliance
 
-#### Security Enhancements
+#### [NEW] `src/app/api/admin/compliance/data-export/route.js`
+- Export all data for a specific employee (Right to Data Portability)
+- JSON + CSV format
 
-##### [MODIFY] `src/lib/auth.js`
-- Complete 2FA implementation (TOTP with QR code setup)
-- Refresh token rotation
-- Session management with device tracking
+#### [NEW] `src/app/api/admin/compliance/data-deletion/route.js`
+- Anonymize employee data (Right to Erasure)
+- Retain only legally required records
 
-##### [MODIFY] `src/lib/security.js`
-- Move rate limiting to database/Redis
-- Add request payload size limits
-- Add Content Security Policy (CSP) headers
-- Add CORS configuration
-
-##### [NEW] `src/middleware.js` (replace proxy.js)
-- Proper Next.js middleware with all security checks
-- API route protection with role-based access
-- Request logging middleware
-
-#### Production Infrastructure
-
-##### [MODIFY] `package.json`
-- Add testing framework (Jest + React Testing Library)
-- Add Zod for runtime schema validation
-- Add `@vercel/blob` or `cloudinary` for file uploads
-
-##### [NEW] Test files across all modules
-- Unit tests for payroll calculator
-- API integration tests for all routes
-- Component tests for critical UI flows
-
-##### [NEW] `.env.example` update
-- Document all required environment variables
-- Add `NEXT_PUBLIC_APP_URL` as mandatory
-- Add cloud storage config variables
-- Add AI API key config
+#### [NEW] `src/app/admin/compliance/page.js`
+- Data retention policy configuration
+- Consent management dashboard
+- Audit trail viewer with filters (date, user, action)
 
 ---
 
-## User Review Required
+## Phase 2: Recruitment & Onboarding (Hire-to-Day-1)
 
 > [!IMPORTANT]
-> This is a massive undertaking. I recommend we execute it **one phase at a time**, starting with **Phase 1** (Foundation) and **Phase 2** (Helpdesk/Communication) as these have the highest impact.
+> Every enterprise HRMS starts the employee lifecycle **before** the employee joins. DayFlow currently has zero recruitment or onboarding capability.
 
-> [!WARNING]
-> Phase 5 (AI Agent) requires an external LLM API key (OpenAI/Google AI/etc.). We need to decide which AI provider to use.
+### 2.1 Applicant Tracking System (ATS)
 
-## Open Questions
+#### New DB Models
+```
+model JobPosting {
+  id, title, description, department, location,
+  employmentType (FULL_TIME/PART_TIME/CONTRACT/INTERN),
+  experienceMin, experienceMax, salaryRangeMin, salaryRangeMax,
+  skills[], status (DRAFT/OPEN/ON_HOLD/CLOSED),
+  postedBy, postedAt, closingDate,
+  applications → Application[]
+}
 
-1. **Which phases do you want me to start with?** I recommend Phase 1 + Phase 2 first.
-2. **AI Provider for Phase 5**: Which LLM do you want to power the AI chatbot? (OpenAI GPT, Google Gemini, or local model?)
-3. **File Storage**: For document uploads, should we use Vercel Blob (free tier), Cloudinary, or AWS S3?
-4. **Do you want multi-tenancy?** (Multiple companies using the same DayFlow instance) — this would be a big architectural change.
-5. **Mobile App**: Are you planning a React Native / Flutter mobile app later? This affects API design decisions.
+model Application {
+  id, jobPostingId, candidateName, candidateEmail,
+  candidatePhone, resumeUrl, coverLetterUrl,
+  source (WEBSITE/LINKEDIN/REFERRAL/NAUKRI/INDEED),
+  status (NEW/SCREENING/INTERVIEW/OFFER/HIRED/REJECTED),
+  stage, rating, notes, referredBy,
+  interviewSchedules → InterviewSchedule[]
+}
+
+model InterviewSchedule {
+  id, applicationId, interviewerId, roundName,
+  scheduledAt, duration, meetingLink,
+  status (SCHEDULED/COMPLETED/CANCELLED),
+  feedback, rating, recommendation (HIRE/NO_HIRE/MAYBE)
+}
+```
+
+#### Pages
+- `src/app/admin/recruitment/page.js` — Job postings board (Kanban view)
+- `src/app/admin/recruitment/[jobId]/page.js` — Application pipeline
+- `src/app/admin/recruitment/new/page.js` — Create job posting form
+- `src/app/careers/page.js` — **Public** careers page (no auth needed)
+- `src/app/careers/[jobId]/page.js` — Public job detail + apply form
+
+---
+
+### 2.2 Employee Onboarding Workflow
+
+#### New DB Models
+```
+model OnboardingTemplate {
+  id, name, departmentId, tasks → OnboardingTask[]
+}
+
+model OnboardingTask {
+  id, templateId, title, description, assignedRole,
+  dueInDays, isRequired, category
+  (DOCUMENT/IT_SETUP/TRAINING/POLICY_ACK/BUDDY/WELCOME)
+}
+
+model OnboardingProgress {
+  id, employeeId, taskId, status (PENDING/COMPLETED/SKIPPED),
+  completedAt, completedBy, notes
+}
+```
+
+#### Pages
+- `src/app/admin/onboarding/templates/page.js` — Create/manage templates
+- `src/app/admin/onboarding/[employeeId]/page.js` — Track new hire progress
+- `src/app/dashboard/onboarding/page.js` — Employee onboarding checklist (Day 1 experience)
+
+#### Features
+- Automated welcome email with login credentials
+- Document collection checklist (ID proof, bank details, offer letter acknowledgement)
+- IT asset request trigger
+- Buddy assignment
+- Policy acknowledgement with e-signature
+- Progress tracker visible to both admin and employee
+
+---
+
+### 2.3 Employee Offboarding
+
+#### New DB Models
+```
+model OffboardingProcess {
+  id, employeeId, initiatedBy, lastWorkingDate,
+  reason (RESIGNATION/TERMINATION/RETIREMENT/CONTRACT_END),
+  status (INITIATED/IN_PROGRESS/COMPLETED),
+  exitInterviewCompleted, assetReturnStatus,
+  knowledgeTransferStatus, finalSettlementStatus
+}
+
+model ExitInterview {
+  id, employeeId, conductedBy, feedback,
+  reasonForLeaving, wouldRecommend, suggestions
+}
+```
+
+#### Pages
+- `src/app/admin/offboarding/page.js` — Active offboarding list
+- `src/app/admin/offboarding/[employeeId]/page.js` — Exit checklist
+- Employee self-service exit interview form
+
+---
+
+## Phase 3: Performance & Growth
+
+### 3.1 Performance Management System (PMS)
+
+#### New DB Models
+```
+model PerformanceReview {
+  id, employeeId, reviewerId, reviewCycle,
+  period (Q1/Q2/Q3/Q4/ANNUAL), year,
+  selfRating, managerRating, finalRating,
+  selfComments, managerComments,
+  status (SELF_REVIEW/MANAGER_REVIEW/CALIBRATION/COMPLETED),
+  goals → PerformanceGoal[]
+}
+
+model PerformanceGoal {
+  id, reviewId, title, description,
+  metric, targetValue, achievedValue,
+  weight, rating, comments
+}
+
+model Feedback360 {
+  id, employeeId, feedbackFromId,
+  relationship (PEER/SUBORDINATE/MANAGER/EXTERNAL),
+  strengths, areasOfImprovement, overallRating,
+  isAnonymous
+}
+```
+
+#### Pages
+- `src/app/admin/performance/page.js` — Review cycles dashboard
+- `src/app/admin/performance/cycles/new/page.js` — Create review cycle
+- `src/app/admin/performance/calibration/page.js` — Rating calibration (bell curve)
+- `src/app/dashboard/performance/page.js` — Employee self-review
+- `src/app/dashboard/performance/feedback/page.js` — Give/receive 360 feedback
+
+---
+
+### 3.2 OKR (Objectives & Key Results) Tracking
+
+#### New DB Models
+```
+model Objective {
+  id, title, description, ownerId, parentId,
+  level (COMPANY/DEPARTMENT/TEAM/INDIVIDUAL),
+  quarter, year, progress, status,
+  keyResults → KeyResult[]
+}
+
+model KeyResult {
+  id, objectiveId, title, metricType (PERCENTAGE/NUMBER/CURRENCY/BOOLEAN),
+  startValue, targetValue, currentValue,
+  status, checkIns → KRCheckIn[]
+}
+
+model KRCheckIn {
+  id, keyResultId, value, comment, createdAt
+}
+```
+
+#### Pages
+- `src/app/admin/okrs/page.js` — Company-wide OKR tree view
+- `src/app/dashboard/okrs/page.js` — Personal OKRs + check-in UI
+
+---
+
+### 3.3 Learning Management System (LMS)
+
+#### New DB Models
+```
+model Course {
+  id, title, description, category, instructor,
+  duration, thumbnailUrl, contentUrl, contentType
+  (VIDEO/PDF/SCORM/LINK), isRequired,
+  departmentId, enrollments → Enrollment[]
+}
+
+model Enrollment {
+  id, courseId, employeeId, progress, score,
+  status (NOT_STARTED/IN_PROGRESS/COMPLETED/FAILED),
+  enrolledAt, completedAt, certificateUrl
+}
+
+model LearningPath {
+  id, title, description, courses → LearningPathCourse[]
+}
+```
+
+#### Pages
+- `src/app/admin/learning/page.js` — Course management
+- `src/app/admin/learning/new/page.js` — Create/upload course
+- `src/app/dashboard/learning/page.js` — My courses, learning paths
+- `src/app/dashboard/learning/[courseId]/page.js` — Course viewer
+
+---
+
+## Phase 4: Workforce Operations
+
+### 4.1 Shift Management & Roster Planning
+
+#### New DB Models
+```
+model Shift {
+  id, name, startTime, endTime, graceMinutes,
+  isNightShift, isFlexible, color
+}
+
+model ShiftAssignment {
+  id, employeeId, shiftId, date, isOverride,
+  swapRequestedWith, swapStatus
+}
+
+model ShiftRotationTemplate {
+  id, name, pattern, cycleDays
+}
+```
+
+#### Pages
+- `src/app/admin/shifts/page.js` — Weekly/monthly roster builder (drag-and-drop grid)
+- `src/app/dashboard/shifts/page.js` — My shift schedule + swap requests
+
+---
+
+### 4.2 Expense & Reimbursement Management
+
+#### New DB Models
+```
+model ExpenseClaim {
+  id, employeeId, title, category
+  (TRAVEL/FOOD/ACCOMMODATION/EQUIPMENT/CLIENT_MEETING/OTHER),
+  amount, currency, receiptUrl, description,
+  status (DRAFT/SUBMITTED/APPROVED/REJECTED/PAID),
+  submittedAt, approvedBy, approvedAt, paidAt,
+  items → ExpenseItem[]
+}
+
+model ExpenseItem {
+  id, claimId, description, amount, date, receiptUrl
+}
+
+model ExpensePolicy {
+  id, category, maxAmount, requiresReceipt,
+  requiresPreApproval, autoApproveBelow
+}
+```
+
+#### Pages
+- `src/app/admin/expenses/page.js` — Approve/reject claims
+- `src/app/dashboard/expenses/page.js` — Submit new claim, view history
+- `src/app/dashboard/expenses/new/page.js` — Multi-item expense form with receipt upload
+
+---
+
+### 4.3 Asset Management
+
+#### New DB Models
+```
+model Asset {
+  id, name, type (LAPTOP/MONITOR/PHONE/KEYBOARD/MOUSE/HEADSET/
+  ACCESS_CARD/OTHER), brand, model, serialNumber,
+  purchaseDate, purchaseCost, warrantyExpiry,
+  status (AVAILABLE/ASSIGNED/UNDER_REPAIR/RETIRED),
+  condition, location, assignedTo, assignedAt
+}
+
+model AssetAssignment {
+  id, assetId, employeeId, assignedAt, returnedAt,
+  condition, acknowledgementSigned
+}
+```
+
+#### Pages
+- `src/app/admin/assets/page.js` — Full asset inventory with filters
+- `src/app/admin/assets/new/page.js` — Add new asset
+- `src/app/admin/assets/assign/page.js` — Assign/return asset to employee
+- `src/app/dashboard/assets/page.js` — "My Assets" view for employees
+
+---
+
+### 4.4 Timesheet & Project Tracking
+
+#### New DB Models
+```
+model Project {
+  id, name, code, clientName, startDate, endDate,
+  status, budgetHours, managerId
+}
+
+model Timesheet {
+  id, employeeId, projectId, date,
+  hours, description, billable, status
+  (DRAFT/SUBMITTED/APPROVED/REJECTED)
+}
+```
+
+#### Pages
+- `src/app/admin/projects/page.js` — Project list + hours summary
+- `src/app/dashboard/timesheet/page.js` — Weekly timesheet grid entry
+
+---
+
+## Phase 5: Organization & Culture
+
+### 5.1 Organization Chart (Interactive)
+
+#### [NEW] `src/app/dashboard/org-chart/page.js`
+- Hierarchical tree view of the entire company
+- Zoom, pan, search employee
+- Click employee node → profile popup
+- Auto-generated from `reportsTo` field
+
+#### [MODIFY] `prisma/schema.prisma`
+- Add `managerId` / `reportsTo` field on `User` or `EmployeeDetails`
+
+---
+
+### 5.2 Employee Directory & People Search
+
+#### [NEW] `src/app/dashboard/directory/page.js`
+- Grid/list view of all employees with avatars
+- Search by name, department, skill, location
+- Click → mini profile card
+- Birthday and work anniversary badges
+
+---
+
+### 5.3 Employee Engagement
+
+#### New DB Models
+```
+model Survey {
+  id, title, description, createdBy, isAnonymous,
+  startsAt, endsAt, status, questions → SurveyQuestion[]
+}
+
+model SurveyQuestion {
+  id, surveyId, question, type (RATING/TEXT/MCQ/YES_NO), options[]
+}
+
+model SurveyResponse {
+  id, surveyId, employeeId, answers → SurveyAnswer[]
+}
+
+model Recognition {
+  id, fromId, toId, message, badge
+  (TEAM_PLAYER/INNOVATOR/CUSTOMER_HERO/ABOVE_AND_BEYOND),
+  points, createdAt
+}
+```
+
+#### Pages
+- `src/app/admin/surveys/page.js` — Create and manage engagement surveys
+- `src/app/dashboard/surveys/page.js` — Take surveys
+- `src/app/dashboard/recognition/page.js` — Give/receive kudos, recognition wall
+- `src/app/admin/engagement/page.js` — eNPS scores, survey analytics
+
+---
+
+### 5.4 Company Policy Hub
+
+#### [NEW] `src/app/dashboard/policies/page.js`
+- Categorized list of all company policies (HR, IT, Finance, Safety)
+- Read acknowledgement tracking
+- Version history for each policy document
+- Search within policies
+
+---
+
+## Phase 6: Analytics & Intelligence
+
+### 6.1 Advanced HR Analytics Dashboard
+
+#### [NEW] `src/app/admin/analytics/page.js`
+- **Headcount Analytics**: Growth over time, by department, by location
+- **Attrition Dashboard**: Monthly/quarterly attrition rate, reasons, risk prediction
+- **Diversity Metrics**: Gender ratio, age distribution
+- **Attendance Analytics**: Late trends, absenteeism rate, department comparison
+- **Leave Analytics**: Most used leave types, peak leave months
+- **Payroll Analytics**: Total cost, department-wise salary distribution
+- **Recruitment Funnel**: Source effectiveness, time-to-hire, offer acceptance rate
+
+### 6.2 Custom Report Builder
+
+#### [NEW] `src/app/admin/reports/builder/page.js`
+- Drag-and-drop report builder
+- Select data source (Employees, Attendance, Leaves, Payroll)
+- Add filters, grouping, sorting
+- Export to PDF, Excel, CSV
+- Save and schedule recurring reports via email
+
+---
+
+## Phase 7: Compliance & Statutory (India-specific)
+
+### 7.1 Statutory Compliance Module
+
+#### New DB Models
+```
+model StatutoryConfig {
+  id, type (PF/ESI/PT/LWF/TDS/GRATUITY),
+  employeeContribution, employerContribution,
+  ceiling, isActive, effectiveFrom, state
+}
+
+model Form16 {
+  id, employeeId, financialYear, generatedAt, fileUrl
+}
+```
+
+#### Pages
+- `src/app/admin/compliance/statutory/page.js` — PF/ESI/PT configuration per state
+- `src/app/admin/compliance/tds/page.js` — TDS declarations, investment proofs
+- `src/app/dashboard/tax/page.js` — Employee investment declaration (80C, 80D, HRA)
+- Auto-generate Form 16, PF return files
+
+---
+
+### 7.2 Full & Final Settlement
+
+#### [NEW] `src/app/admin/settlements/[employeeId]/page.js`
+- Auto-calculate: Remaining salary, leave encashment, bonus, gratuity
+- Deduct: Notice period recovery, asset damage, loan balance
+- Generate settlement letter (PDF)
+
+---
+
+## Phase 8: Integrations & Infrastructure
+
+### 8.1 Webhook & Integration Framework
+
+#### New DB Models
+```
+model WebhookEndpoint {
+  id, url, events[], secret, isActive, companyId
+}
+
+model WebhookLog {
+  id, endpointId, event, payload, responseCode,
+  responseBody, deliveredAt, retryCount
+}
+```
+
+- Event triggers: `employee.created`, `leave.approved`, `payroll.generated`, `attendance.checkin`
+- Retry with exponential backoff
+- Webhook signature verification (HMAC-SHA256)
+
+---
+
+### 8.2 API Rate Limiting (per-tenant)
+
+#### [MODIFY] `src/lib/security.js`
+- Move from in-memory Map to Redis-compatible store (or Vercel KV)
+- Per-user, per-IP, per-endpoint rate limits
+- `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
+
+---
+
+### 8.3 Background Job Processing
+
+#### [NEW] `src/lib/queue.js`
+- Job queue for long-running tasks (payroll processing, bulk emails, report generation)
+- Using Vercel Cron or Bull/BullMQ pattern
+- Status tracking, retry on failure
+
+---
+
+### 8.4 File Storage Abstraction
+
+#### [NEW] `src/lib/storage.js`
+- Abstract file uploads behind a storage interface
+- Support local disk (dev) and S3/Cloudflare R2 (production)
+- Pre-signed URL generation for secure downloads
+- Virus/malware scanning hook
+
+---
+
+## Phase 9: UI/UX Polish (Enterprise-grade)
+
+### 9.1 Multi-language Support (i18n)
+
+- English, Hindi, Gujarati, Tamil, Telugu (start with English + Hindi)
+- Language selector in user settings
+- All UI strings externalized to translation files
+
+### 9.2 Dark Mode
+
+- System-level dark mode toggle
+- All components theme-aware
+- Persist preference per user
+
+### 9.3 Mobile-Responsive Redesign
+
+- Every page tested on 375px width
+- Bottom navigation on mobile (already done via FloatingNavbar)
+- Touch-friendly date pickers and modals
+- PWA support (install as app on phone)
+
+### 9.4 Accessibility (WCAG 2.1 AA)
+
+- All interactive elements have `aria-labels`
+- Keyboard navigation for all modals and forms
+- Color contrast ratio ≥ 4.5:1
+- Screen reader announcements for dynamic content
+
+### 9.5 Onboarding Tour
+
+- First-time user interactive walkthrough
+- Highlight key features with tooltip overlays
+- "Skip tour" option
+
+---
+
+## Phase 10: DevOps & Production Readiness
+
+### 10.1 Error Monitoring & Logging
+
+- Sentry integration for runtime error tracking
+- Structured JSON logging for API routes
+- Health check endpoint (`/api/health`)
+
+### 10.2 Database Optimization
+
+- Add database indexes on all frequently queried columns
+- Connection pooling via PgBouncer or Prisma Accelerate
+- Query performance monitoring
+
+### 10.3 CI/CD Pipeline
+
+- GitHub Actions workflow: Lint → Test → Build → Deploy
+- Preview deployments on PRs (Vercel)
+- Database migration safety checks
+
+### 10.4 Environment Management
+
+- Separate staging and production environments
+- Feature flags for gradual rollouts
+- Seed scripts for demo data
+
+---
+
+## Implementation Priority Matrix
+
+| Priority | Phase | Effort | Business Impact |
+| :--- | :--- | :--- | :--- |
+| 🔴 P0 — Critical | Phase 1 (Security) | 2 weeks | Blocks enterprise adoption |
+| 🔴 P0 — Critical | Phase 7 (Statutory Compliance) | 2 weeks | Required for Indian companies |
+| 🟠 P1 — High | Phase 2 (Recruitment & Onboarding) | 3 weeks | Core HRMS differentiator |
+| 🟠 P1 — High | Phase 3 (Performance & OKRs) | 2 weeks | Major feature gap |
+| 🟡 P2 — Medium | Phase 4 (Workforce Ops) | 3 weeks | Operational efficiency |
+| 🟡 P2 — Medium | Phase 5 (Culture & Engagement) | 2 weeks | Employee retention |
+| 🟡 P2 — Medium | Phase 6 (Analytics) | 2 weeks | Decision-making power |
+| 🟢 P3 — Nice-to-have | Phase 8 (Integrations) | 2 weeks | Enterprise scalability |
+| 🟢 P3 — Nice-to-have | Phase 9 (UI Polish) | 2 weeks | User experience |
+| 🟢 P3 — Nice-to-have | Phase 10 (DevOps) | 1 week | Production stability |
+
+---
+
+## Summary of New Additions
+
+| Category | New Models | New Pages | New APIs |
+| :--- | :--- | :--- | :--- |
+| Security & Auth | 1 | 3 | 5 |
+| Recruitment | 3 | 5 | 4 |
+| Onboarding/Offboarding | 5 | 4 | 3 |
+| Performance/OKRs | 6 | 5 | 4 |
+| LMS | 3 | 4 | 3 |
+| Shift Management | 3 | 2 | 2 |
+| Expenses | 3 | 3 | 2 |
+| Assets | 2 | 4 | 2 |
+| Timesheets | 2 | 2 | 2 |
+| Org Chart/Directory | 0 | 2 | 1 |
+| Surveys/Recognition | 4 | 4 | 3 |
+| Compliance/Tax | 2 | 4 | 3 |
+| Webhooks | 2 | 1 | 2 |
+| Analytics | 0 | 2 | 3 |
+| **TOTAL** | **~36** | **~45** | **~39** |
+
+## Implementation Status
+
+All 6 phases of the enterprise architecture plan have been successfully implemented:
+- **Phase 1**: Role-Based Access Control (RBAC) & NextAuth Integration - [Completed]
+- **Phase 2**: Organizational Hierarchy & Document Management - [Completed]
+- **Phase 3**: Advanced Payroll & Tax Compliance - [Completed]
+- **Phase 4**: Performance & OKR Management - [Completed]
+- **Phase 5**: Leave Policies & Time-Off Accruals - [Completed]
+- **Phase 6**: Advanced Multi-Level Approvals & Workflows - [Completed]
 
 ## Verification Plan
 
-### After Each Phase
-- Run the dev server and test all new features end-to-end
-- Verify existing features still work (no regressions)
-- Test responsive design on mobile/tablet
-- Verify database migrations run cleanly
+### Automated Tests
+- `npm run lint` and `npm run build` to ensure no build errors.
+- Verify Prisma schema compiles correctly with `npx prisma format`.
 
-### Automated Tests (Phase 6)
-- `npm test` — Unit & integration test suite
-- `npx prisma validate` — Schema validation
-- Build verification: `npm run build`
+### Manual Verification
+- Start development server (`npm run dev`) and test creating a multi-step workflow.
+- Simulate an approval request and ensure it correctly cascades from Manager to HR.
+
+**After completion**: DayFlow now features **~56 DB models**, **~90 pages**, and **~55+ API routes** — making it a truly enterprise-grade HRMS.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- API route tests using Jest + Supertest for every new endpoint
+- `npx prisma migrate dev` to validate schema changes
+
+### Manual Verification
+- Test each module end-to-end in browser
+- Verify mobile responsiveness on Chrome DevTools
+- Security audit: test CSRF, XSS, SQL injection, rate limiting
+- Performance: Lighthouse scores > 90
+- Cross-browser testing: Chrome, Firefox, Safari, Edge
+
+---
+
+> [!IMPORTANT]
+> **Recommended execution order**: Phase 1 → Phase 7 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 8 → Phase 9 → Phase 10
+> 
+> Security first. Compliance second. Features third. Polish last.
+

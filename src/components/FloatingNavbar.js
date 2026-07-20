@@ -4,16 +4,20 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { LayoutDashboard, Users, Clock, Calendar, Banknote, FileText, LogOut, MessageCircle, Trophy, FileBarChart, LifeBuoy, Megaphone, Settings } from "lucide-react"
+import { LayoutDashboard, Users, Clock, Calendar, Banknote, FileText, LogOut, MessageCircle, Trophy, FileBarChart, LifeBuoy, Megaphone, Settings, ShieldAlert, Briefcase, UserPlus, UserMinus } from "lucide-react"
 
 const defaultAdminItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Employees", href: "/admin/employees", icon: Users },
+    { name: "Recruitment", href: "/admin/recruitment", icon: Briefcase },
+    { name: "Onboarding", href: "/admin/onboarding/templates", icon: UserPlus },
+    { name: "Offboarding", href: "/admin/offboarding", icon: UserMinus },
     { name: "Attendance", href: "/admin/attendance", icon: Clock },
     { name: "Payroll", href: "/admin/payroll", icon: Banknote },
     { name: "Leaves", href: "/admin/leaves", icon: Calendar },
     { name: "Helpdesk", href: "/admin/helpdesk", icon: LifeBuoy },
     { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
+    { name: "Compliance", href: "/admin/compliance", icon: ShieldAlert },
     { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 

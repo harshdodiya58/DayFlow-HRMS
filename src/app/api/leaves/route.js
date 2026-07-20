@@ -12,7 +12,7 @@ export async function GET(request) {
 
         const currentYear = new Date().getFullYear()
 
-        let [leaves, balances, holidays] = await Promise.all([
+        let [leaves, balances, holidays, accruals] = await Promise.all([
             // Leave history
             prisma.leaveRequest.findMany({
                 where: { userId: payload.id },
@@ -28,6 +28,11 @@ export async function GET(request) {
                     date: { gte: new Date(new Date().getFullYear(), 0, 1) } 
                 },
                 orderBy: { date: 'asc' }
+            }),
+            // Accruals for current year
+            prisma.leaveAccrualLog.findMany({
+                where: { userId: payload.id, year: currentYear },
+                orderBy: { transactionDate: 'desc' }
             })
         ])
 
@@ -59,7 +64,7 @@ export async function GET(request) {
             }
         }
 
-        return NextResponse.json({ leaves, balances, holidays })
+        return NextResponse.json({ leaves, balances, holidays, accruals })
 
     } catch (e) {
         return NextResponse.json({ error: e.message }, { status: 500 })

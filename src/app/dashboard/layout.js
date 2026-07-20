@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import FloatingNavbar from "@/components/FloatingNavbar"
 import NotificationBell from "@/components/NotificationBell"
 import AIAssistant from "@/components/AIAssistant"
-import { LayoutDashboard, CalendarCheck, FileText, User, Banknote, MessageCircle, Trophy, LogOut, LifeBuoy, Megaphone } from "lucide-react"
+import { LayoutDashboard, CalendarCheck, FileText, User, Banknote, MessageCircle, Trophy, LogOut, LifeBuoy, Megaphone, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 // Reuse the Floating Navbar logic but with Employee links
@@ -18,6 +18,7 @@ const navItems = [
     { label: "Announcements", icon: Megaphone, href: "/dashboard/announcements" },
     { label: "Leaves", icon: FileText, href: "/dashboard/leaves" },
     { label: "Profile", icon: User, href: "/dashboard/profile" },
+    { label: "Security", icon: Shield, href: "/dashboard/settings/security" },
 ]
 
 export default function EmployeeLayout({ children }) {

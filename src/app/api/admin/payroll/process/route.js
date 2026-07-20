@@ -49,6 +49,11 @@ export async function POST(request) {
             }
         })
 
+        // 4. Fetch Active Statutory Configs
+        const statutoryConfigs = await prisma.statutoryConfig.findMany({
+            where: { isActive: true }
+        })
+
         const payrolls = []
         const skippedEmployees = []
 
@@ -108,14 +113,15 @@ export async function POST(request) {
 
             const approvedLeaveDays = calculateApprovedLeaveDays(approvedLeaveRequests, startDate, endDate)
 
-            // 4. Calculate Complete Payroll using shared library
+            // 4. Calculate Complete Payroll using shared library (with Statutory Configs)
             const payrollCalculation = calculateCompletePayroll({
                 salary,
                 attendanceCount,
                 weekends,
                 approvedLeaveDays,
                 daysInMonth,
-                otherDeductions: 0
+                otherDeductions: 0,
+                statutoryConfigs
             })
 
             // Delete old record for this month

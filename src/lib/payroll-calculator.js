@@ -223,7 +223,8 @@ export function calculateCompletePayroll({
     weekends,
     approvedLeaveDays,
     daysInMonth,
-    otherDeductions = 0
+    otherDeductions = 0,
+    statutoryConfigs = [] // Optional configs array
 }) {
     // Step 1: Calculate gross salary
     const grossSalary = calculateGrossSalary(salary)
@@ -234,16 +235,43 @@ export function calculateCompletePayroll({
     // Step 3: Calculate pro-rated earned gross
     const earnedGross = calculateEarnedGross(grossSalary, payableDays, daysInMonth)
     
+    // Process Statutory Configs
+    let esiDeduction = 0
+    let tdsDeduction = 0
+    let pfAmount = salary.pf
+    let ptAmount = salary.profTax
+    
+    statutoryConfigs.forEach(config => {
+        if (!config.isActive) return
+        if (config.type === 'ESI') {
+            if (!config.ceiling || earnedGross <= config.ceiling) {
+                esiDeduction = Math.round(earnedGross * (config.employeeContribution / 100))
+            }
+        }
+        if (config.type === 'TDS') {
+             // simplified TDS logic based on configuration %
+             tdsDeduction = Math.round(earnedGross * (config.employeeContribution / 100))
+        }
+        if (config.type === 'PF' && config.employeeContribution > 0) {
+             let baseForPf = salary.basic
+             if (config.ceiling && baseForPf > config.ceiling) baseForPf = config.ceiling
+             pfAmount = baseForPf * (config.employeeContribution / 100)
+        }
+        if (config.type === 'PT' && config.employeeContribution > 0) {
+             ptAmount = config.employeeContribution
+        }
+    })
+
     // Step 4: Calculate deductions
-    const earnedPF = calculateEarnedPF(salary.pf, payableDays, daysInMonth)
-    const earnedProfTax = calculateProfessionalTax(payableDays, salary.profTax)
-    const totalDeductions = calculateTotalDeductions(earnedPF, earnedProfTax, otherDeductions)
+    const earnedPF = calculateEarnedPF(pfAmount, payableDays, daysInMonth)
+    const earnedProfTax = calculateProfessionalTax(payableDays, ptAmount)
+    const totalDeductions = calculateTotalDeductions(earnedPF, earnedProfTax, otherDeductions + esiDeduction + tdsDeduction)
     
     // Step 5: Calculate net pay
     const netPay = calculateNetPay(earnedGross, totalDeductions)
     
     // Step 6: Calculate loss of pay
-    const lossOfPay = calculateLossOfPay(grossSalary, salary.pf, salary.profTax, netPay)
+    const lossOfPay = calculateLossOfPay(grossSalary, pfAmount, ptAmount, netPay)
     
     return {
         // Breakdown
@@ -260,6 +288,8 @@ export function calculateCompletePayroll({
         // Deductions
         pfDeduction: earnedPF,
         profTaxDeduction: earnedProfTax,
+        esiDeduction,
+        tdsDeduction,
         otherDeductions,
         totalDeductions,
         

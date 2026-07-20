@@ -10,6 +10,7 @@ export default function LeavePage() {
     const [leaves, setLeaves] = useState([])
     const [balances, setBalances] = useState([])
     const [holidays, setHolidays] = useState([])
+    const [accruals, setAccruals] = useState([])
     
     const [showForm, setShowForm] = useState(false)
     const [showHolidaysModal, setShowHolidaysModal] = useState(false)
@@ -38,6 +39,7 @@ export default function LeavePage() {
                 setLeaves(data.leaves || [])
                 setBalances(data.balances || [])
                 setHolidays(data.holidays || [])
+                setAccruals(data.accruals || [])
                 
                 if (data.balances?.length > 0 && !formData.type) {
                     setFormData(prev => ({ ...prev, type: data.balances[0].leaveType }))
@@ -159,6 +161,36 @@ export default function LeavePage() {
                         })}
                     </div>
                 )}
+            </div>
+
+            {/* Accruals History Section */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mt-8">
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-blue-500" />
+                        Accruals History
+                    </h2>
+                </div>
+                <div className="p-6">
+                    {accruals.length === 0 ? (
+                        <div className="text-slate-500 text-center py-8">No accrual history available.</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {accruals.map((acc) => (
+                                <div key={acc.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800">{acc.leaveType}</h4>
+                                        <p className="text-sm text-slate-500">{acc.description}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="font-bold text-green-600">+{acc.accruedAmount}</span>
+                                        <p className="text-xs text-slate-400">{new Date(acc.transactionDate).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">

@@ -46,6 +46,10 @@ model Department {
   parent        Department?       @relation("DepartmentHierarchy", fields: [parentId], references: [id])
   children      Department[]      @relation("DepartmentHierarchy")
   employees     EmployeeDetails[]
+  jobPostings   JobPosting[]
+  onboardingTemplates OnboardingTemplate[]
+  goals         Goal[]
+  workflows     ApprovalWorkflow[]
 }
 
 model Holiday {
@@ -99,8 +103,43 @@ model User {
   ticketsAssigned         SupportTicket[]         @relation("TicketAssignedTo")
   ticketsRaised           SupportTicket[]         @relation("TicketRaisedBy")
   ticketMessages          TicketMessage[]
+  passwordHistory         PasswordHistory[]
+  passwordChangedAt       DateTime?
   manager                 User?                   @relation("ManagerReports", fields: [managerId], references: [id])
   reports                 User[]                  @relation("ManagerReports")
+  
+  // Phase 2 Relations
+  jobsPosted              JobPosting[]            @relation("JobsPostedBy")
+  applicationsReferred    Application[]           @relation("ApplicationsReferredBy")
+  interviewsConducted     InterviewSchedule[]     @relation("InterviewsConducted")
+  onboardingProgress      OnboardingProgress[]    @relation("OnboardingEmployee")
+  onboardingTasksCompleted OnboardingProgress[]   @relation("OnboardingCompletedBy")
+  offboarding             OffboardingProcess?     @relation("OffboardingEmployee")
+  offboardingInitiated    OffboardingProcess[]    @relation("OffboardingInitiatedBy")
+  exitInterview           ExitInterview?          @relation("ExitInterviewEmployee")
+  exitInterviewsConducted ExitInterview[]         @relation("ExitInterviewConductedBy")
+
+  // Phase 3 Relations
+  taxDeclarations         TaxDeclaration[]        @relation("TaxDeclarations")
+  taxReviewed             TaxDeclaration[]        @relation("TaxReviewedBy")
+  form16s                 Form16[]                @relation("Form16s")
+  settlement              Settlement?             @relation("SettlementEmployee")
+  settlementsProcessed    Settlement[]            @relation("SettlementProcessor")
+
+  // Phase 4 Relations
+  goalsAssigned           Goal[]                  @relation("EmployeeGoals")
+  goalsManaged            Goal[]                  @relation("ManagerAssignedGoals")
+  performanceReviews      PerformanceReview[]     @relation("EmployeeReviews")
+  performanceReviewsDone  PerformanceReview[]     @relation("ManagerReviews")
+  feedbackGiven           Feedback[]              @relation("FeedbackProvided")
+  feedbackReceived        Feedback[]              @relation("FeedbackReceived")
+
+  // Phase 5 Relations
+  leaveAccruals           LeaveAccrualLog[]       @relation("LeaveAccruals")
+
+  // Phase 6 Relations
+  approvalRequests        ApprovalRequest[]       @relation("ApprovalRequester")
+  approvalSteps           ApprovalStep[]          @relation("Approver")
 }
 
 model EmployeeDetails {
@@ -184,14 +223,29 @@ model LeavePolicy {
   id                 Int       @id @default(autoincrement())
   leaveType          LeaveType @unique
   annualEntitlement  Int       @default(12)
+  accrualRatePerMonth Float    @default(1.0)
   maxCarryForward    Int       @default(5)
   maxConsecutiveDays Int       @default(5)
   requiresApproval   Boolean   @default(true)
   minNoticeDays      Int       @default(1)
+  isEncashable       Boolean   @default(false)
   isActive           Boolean   @default(true)
   description        String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+}
+
+model LeaveAccrualLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  leaveType       LeaveType
+  month           Int
+  year            Int
+  accruedAmount   Float
+  transactionDate DateTime  @default(now())
+  description     String?
+
+  user            User      @relation("LeaveAccruals", fields: [userId], references: [id])
 }
 
 model LeaveBalance {
@@ -223,6 +277,8 @@ model Payroll {
   earnedGross      Float         @default(0)
   pfDeduction      Float         @default(0)
   profTaxDeduction Float         @default(0)
+  esiDeduction     Float         @default(0)
+  tdsDeduction     Float         @default(0)
   otherDeductions  Float         @default(0)
   baseWage         Float
   totalEarnings    Float
@@ -316,14 +372,20 @@ model Document {
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  token     String   @unique
-  ipAddress String?
-  userAgent String?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  token        String   @unique
+  ipAddress    String?
+  userAgent    String?
+  deviceName   String?
+  deviceType   String?  @default("desktop")
+  browser      String?
+  os           String?
+  isRevoked    Boolean  @default(false)
+  lastActiveAt DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
@@ -486,4 +548,426 @@ enum DocumentType {
   NDA
   CONTRACT
   OTHER
+}
+
+model PasswordHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  hash      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// --- PHASE 2: ATS & ONBOARDING ---
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  ON_HOLD
+  CLOSED
+}
+
+enum ApplicationSource {
+  WEBSITE
+  LINKEDIN
+  REFERRAL
+  NAUKRI
+  INDEED
+  OTHER
+}
+
+enum ApplicationStatus {
+  NEW
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum InterviewRecommendation {
+  HIRE
+  NO_HIRE
+  MAYBE
+}
+
+model JobPosting {
+  id              Int           @id @default(autoincrement())
+  title           String
+  description     String        @db.Text
+  departmentId    Int?
+  location        String?
+  employmentType  EmploymentType @default(FULL_TIME)
+  experienceMin   Int?
+  experienceMax   Int?
+  salaryRangeMin  Int?
+  salaryRangeMax  Int?
+  skills          String[]      @default([])
+  status          JobStatus     @default(DRAFT)
+  postedById      Int?
+  postedAt        DateTime?
+  closingDate     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  department      Department?   @relation(fields: [departmentId], references: [id])
+  postedBy        User?         @relation("JobsPostedBy", fields: [postedById], references: [id])
+  applications    Application[]
+}
+
+model Application {
+  id              Int               @id @default(autoincrement())
+  jobPostingId    Int
+  candidateName   String
+  candidateEmail  String
+  candidatePhone  String?
+  resumeUrl       String?
+  coverLetterUrl  String?
+  source          ApplicationSource @default(WEBSITE)
+  status          ApplicationStatus @default(NEW)
+  stage           String?           @default("Applied")
+  rating          Int?
+  notes           String?           @db.Text
+  referredById    Int?
+  appliedAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  jobPosting      JobPosting        @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  referredBy      User?             @relation("ApplicationsReferredBy", fields: [referredById], references: [id])
+  interviews      InterviewSchedule[]
+}
+
+model InterviewSchedule {
+  id              Int               @id @default(autoincrement())
+  applicationId   Int
+  interviewerId   Int
+  roundName       String
+  scheduledAt     DateTime
+  durationMinutes Int               @default(60)
+  meetingLink     String?
+  status          InterviewStatus   @default(SCHEDULED)
+  feedback        String?           @db.Text
+  rating          Int?
+  recommendation  InterviewRecommendation?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  application     Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer     User              @relation("InterviewsConducted", fields: [interviewerId], references: [id])
+}
+
+enum OnboardingTaskCategory {
+  DOCUMENT
+  IT_SETUP
+  TRAINING
+  POLICY_ACK
+  BUDDY
+  WELCOME
+}
+
+enum OnboardingTaskStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
+
+model OnboardingTemplate {
+  id            Int               @id @default(autoincrement())
+  name          String
+  departmentId  Int?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  department    Department?       @relation(fields: [departmentId], references: [id])
+  tasks         OnboardingTask[]
+}
+
+model OnboardingTask {
+  id            Int                    @id @default(autoincrement())
+  templateId    Int
+  title         String
+  description   String?                @db.Text
+  assignedRole  Role                   @default(EMPLOYEE) // Who does this task? HR, IT, Manager, Employee
+  dueInDays     Int                    @default(0) // Days from joining date
+  isRequired    Boolean                @default(true)
+  category      OnboardingTaskCategory @default(WELCOME)
+  
+  template      OnboardingTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  progress      OnboardingProgress[]
+}
+
+model OnboardingProgress {
+  id            Int                  @id @default(autoincrement())
+  employeeId    Int
+  taskId        Int
+  status        OnboardingTaskStatus @default(PENDING)
+  completedAt   DateTime?
+  completedById Int?
+  notes         String?              @db.Text
+  
+  employee      User                 @relation("OnboardingEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  completedBy   User?                @relation("OnboardingCompletedBy", fields: [completedById], references: [id])
+  task          OnboardingTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+
+enum OffboardingReason {
+  RESIGNATION
+  TERMINATION
+  RETIREMENT
+  CONTRACT_END
+}
+
+enum OffboardingStatus {
+  INITIATED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model OffboardingProcess {
+  id                      Int               @id @default(autoincrement())
+  employeeId              Int               @unique
+  initiatedById           Int
+  lastWorkingDate         DateTime          @db.Date
+  reason                  OffboardingReason
+  status                  OffboardingStatus @default(INITIATED)
+  exitInterviewCompleted  Boolean           @default(false)
+  assetReturnStatus       Boolean           @default(false)
+  knowledgeTransferStatus Boolean           @default(false)
+  finalSettlementStatus   Boolean           @default(false)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  employee                User              @relation("OffboardingEmployee", fields: [employeeId], references: [id])
+  initiatedBy             User              @relation("OffboardingInitiatedBy", fields: [initiatedById], references: [id])
+  settlement              Settlement?
+}
+
+model ExitInterview {
+  id                Int      @id @default(autoincrement())
+  employeeId        Int      @unique
+  conductedById     Int?
+  reasonForLeaving  String   @db.Text
+  feedback          String   @db.Text
+  wouldRecommend    Boolean  @default(true)
+  suggestions       String?  @db.Text
+  createdAt         DateTime @default(now())
+
+  employee          User     @relation("ExitInterviewEmployee", fields: [employeeId], references: [id])
+  conductedBy       User?    @relation("ExitInterviewConductedBy", fields: [conductedById], references: [id])
+}
+
+// ------------------------------------------------------
+// PHASE 3: ADVANCED PAYROLL & TAX COMPLIANCE
+// ------------------------------------------------------
+
+enum StatutoryType {
+  PF
+  ESI
+  PT
+  LWF
+  TDS
+  GRATUITY
+}
+
+model StatutoryConfig {
+  id                    Int           @id @default(autoincrement())
+  type                  StatutoryType
+  employeeContribution  Float         @default(0) // Percentage or fixed amount
+  employerContribution  Float         @default(0) // Percentage or fixed amount
+  ceiling               Float?        // e.g., max 15000 for PF
+  isActive              Boolean       @default(true)
+  effectiveFrom         DateTime      @default(now())
+  state                 String?       // For PT, since it varies by state
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model TaxDeclaration {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int
+  financialYear   String   // e.g., "2026-2027"
+  section80C      Float    @default(0)
+  section80D      Float    @default(0)
+  hra             Float    @default(0)
+  otherDeductions Float    @default(0)
+  proofUrls       String[]
+  status          String   @default("SUBMITTED") // SUBMITTED, APPROVED, REJECTED
+  reviewedBy      Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee        User     @relation("TaxDeclarations", fields: [employeeId], references: [id])
+  reviewer        User?    @relation("TaxReviewedBy", fields: [reviewedBy], references: [id])
+}
+
+model Form16 {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int
+  financialYear   String
+  fileUrl         String
+  generatedAt     DateTime @default(now())
+
+  employee        User     @relation("Form16s", fields: [employeeId], references: [id])
+}
+
+model Settlement {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int      @unique
+  offboardingId      Int      @unique
+  leaveEncashment    Float    @default(0)
+  gratuity           Float    @default(0)
+  bonus              Float    @default(0)
+  noticePeriodDeduction Float @default(0)
+  assetDamageDeduction  Float @default(0)
+  loanBalance        Float    @default(0)
+  totalAmount        Float    @default(0)
+  status             String   @default("DRAFT") // DRAFT, PROCESSED, PAID
+  processedBy        Int?
+  processedAt        DateTime?
+
+  employee           User     @relation("SettlementEmployee", fields: [employeeId], references: [id])
+  offboarding        OffboardingProcess @relation(fields: [offboardingId], references: [id])
+  processor          User?    @relation("SettlementProcessor", fields: [processedBy], references: [id])
+}
+
+// ------------------------------------------------------
+// PHASE 4: PERFORMANCE & OKR MANAGEMENT
+// ------------------------------------------------------
+
+enum GoalStatus {
+  NOT_STARTED
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+  COMPLETED
+}
+
+model Goal {
+  id              Int         @id @default(autoincrement())
+  title           String
+  description     String?     @db.Text
+  targetDate      DateTime?
+  progress        Int         @default(0) // 0 to 100
+  status          GoalStatus  @default(NOT_STARTED)
+  employeeId      Int
+  managerId       Int?
+  departmentId    Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  employee        User        @relation("EmployeeGoals", fields: [employeeId], references: [id])
+  manager         User?       @relation("ManagerAssignedGoals", fields: [managerId], references: [id])
+  department      Department? @relation(fields: [departmentId], references: [id])
+}
+
+enum ReviewStatus {
+  DRAFT
+  SELF_ASSESSMENT_PENDING
+  MANAGER_ASSESSMENT_PENDING
+  COMPLETED
+}
+
+model PerformanceReview {
+  id                  Int          @id @default(autoincrement())
+  title               String       // e.g., "Q1 2026 Appraisal"
+  employeeId          Int
+  managerId           Int
+  selfRating          Int?         // 1 to 5
+  selfComments        String?      @db.Text
+  managerRating       Int?         // 1 to 5
+  managerComments     String?      @db.Text
+  status              ReviewStatus @default(DRAFT)
+  dueDate             DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  employee            User         @relation("EmployeeReviews", fields: [employeeId], references: [id])
+  manager             User         @relation("ManagerReviews", fields: [managerId], references: [id])
+}
+
+model Feedback {
+  id              Int      @id @default(autoincrement())
+  providerId      Int
+  receiverId      Int
+  content         String   @db.Text
+  isAnonymous     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  provider        User     @relation("FeedbackProvided", fields: [providerId], references: [id])
+  receiver        User     @relation("FeedbackReceived", fields: [receiverId], references: [id])
+}
+
+// ------------------------------------------------------
+// PHASE 6: MULTI-LEVEL APPROVALS
+// ------------------------------------------------------
+
+enum WorkflowType {
+  LEAVE
+  EXPENSE
+  APPRAISAL
+  OTHER
+}
+
+model ApprovalWorkflow {
+  id              Int       @id @default(autoincrement())
+  name            String
+  type            WorkflowType
+  departmentId    Int?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  department      Department? @relation(fields: [departmentId], references: [id])
+  requests        ApprovalRequest[]
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ApprovalRequest {
+  id              Int       @id @default(autoincrement())
+  workflowId      Int
+  requesterId     Int
+  entityId        Int       // ID of the LeaveRequest, Expense, etc.
+  status          ApprovalStatus @default(PENDING)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workflow        ApprovalWorkflow @relation(fields: [workflowId], references: [id])
+  requester       User             @relation("ApprovalRequester", fields: [requesterId], references: [id])
+  steps           ApprovalStep[]
+}
+
+model ApprovalStep {
+  id              Int       @id @default(autoincrement())
+  requestId       Int
+  approverId      Int
+  stepOrder       Int       // 1, 2, 3...
+  status          ApprovalStatus @default(PENDING)
+  comments        String?   @db.Text
+  actedAt         DateTime?
+
+  request         ApprovalRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approver        User             @relation("Approver", fields: [approverId], references: [id])
 }
