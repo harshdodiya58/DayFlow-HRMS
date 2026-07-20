@@ -4,17 +4,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { LayoutDashboard, Users, Clock, Calendar, Banknote, FileText, LogOut, MessageCircle, Trophy, FileBarChart } from "lucide-react"
+import { LayoutDashboard, Users, Clock, Calendar, Banknote, FileText, LogOut, MessageCircle, Trophy, FileBarChart, LifeBuoy, Megaphone, Settings } from "lucide-react"
 
 const defaultAdminItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Employees", href: "/admin/employees", icon: Users },
     { name: "Attendance", href: "/admin/attendance", icon: Clock },
     { name: "Payroll", href: "/admin/payroll", icon: Banknote },
-    { name: "Reports", href: "/admin/reports", icon: FileBarChart },
-    { name: "Chat", href: "/admin/chat", icon: MessageCircle },
-    { name: "Leaderboard", href: "/admin/leaderboard", icon: Trophy },
     { name: "Leaves", href: "/admin/leaves", icon: Calendar },
+    { name: "Helpdesk", href: "/admin/helpdesk", icon: LifeBuoy },
+    { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
+    { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
 export default function FloatingNavbar({ items }) {
