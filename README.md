@@ -31,8 +31,8 @@ A modern Human Resource Management System built with Next.js, React, and Postgre
 
 1. Clone the repository
 ```bash
-git clone https://github.com/Vatsal636/DayFlow---HRMS.git
-cd DayFlow---HRMS
+git clone https://github.com/harshdodiya58/DayFlow-HRMS.git
+cd DayFlow-HRMS
 ```
 
 2. Install dependencies
