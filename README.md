@@ -20,12 +20,12 @@
 
 ### Employee Dashboard
 <div align="center">
-  <img src="./public/readme/dashboard.png" alt="Employee Dashboard" style="max-width: 100%; width: 800px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+  <img src="./public/readme/dashboard.png" alt="Employee Dashboard" width="100%" />
 </div>
 
 ### Admin Control Panel
 <div align="center">
-  <img src="./public/readme/admin.png" alt="Admin Dashboard" style="max-width: 100%; width: 800px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+  <img src="./public/readme/admin.png" alt="Admin Dashboard" width="100%" />
 </div>
 
 ---
