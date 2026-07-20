@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,214 +7,417 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model CompanySettings {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @default("DayFlow")
+  logo                 String?
+  address              String?
+  phone                String?
+  email                String?
+  website              String?
+  timezone             String   @default("Asia/Kolkata")
+  workStartTime        String   @default("09:00")
+  workEndTime          String   @default("18:00")
+  weekendDays          Int[]    @default([0, 6])
+  lateThreshold        Int      @default(30)
+  halfDayHours         Float    @default(4.0)
+  payrollCurrency      String   @default("INR")
+  financialYearStart   Int      @default(4)
+  updatedAt            DateTime @updatedAt
+  allowedIps           String[] @default([])
+  attendanceValidation String   @default("NONE")
+  officeLat            Float?
+  officeLng            Float?
+  officeRadius         Int      @default(100)
+}
+
+model Department {
+  id            Int               @id @default(autoincrement())
+  name          String            @unique
+  code          String            @unique
+  description   String?
+  headId        Int?
+  parentId      Int?
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  announcements Announcement[]
+  head          User?             @relation("DepartmentHead", fields: [headId], references: [id])
+  parent        Department?       @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children      Department[]      @relation("DepartmentHierarchy")
+  employees     EmployeeDetails[]
+}
+
+model Holiday {
+  id          Int         @id @default(autoincrement())
+  name        String
+  date        DateTime    @db.Date
+  type        HolidayType @default(COMPANY)
+  isOptional  Boolean     @default(false)
+  description String?
+  createdAt   DateTime    @default(now())
+
+  @@unique([date, name])
+}
+
 model User {
-  id          Int      @id @default(autoincrement())
-  employeeId  String   @unique
-  email       String   @unique
-  password    String
-  role        Role     @default(EMPLOYEE)
-  isActive    Boolean  @default(true)
-  firstLogin  Boolean  @default(true)
-  
-  // Email Verification
-  emailVerified       Boolean   @default(false)
-  emailVerificationToken String?
+  id                      Int                     @id @default(autoincrement())
+  employeeId              String                  @unique
+  email                   String                  @unique
+  password                String
+  role                    Role                    @default(EMPLOYEE)
+  isActive                Boolean                 @default(true)
+  firstLogin              Boolean                 @default(true)
+  emailVerified           Boolean                 @default(false)
+  emailVerificationToken  String?
   emailVerificationExpiry DateTime?
-  
-  // Password Reset
-  passwordResetToken   String?
-  passwordResetExpiry  DateTime?
-  
-  // Two-Factor Authentication
-  twoFactorEnabled     Boolean   @default(false)
-  twoFactorSecret      String?
-  
-  // Security & Session Management
-  lastLoginAt          DateTime?
-  failedLoginAttempts  Int       @default(0)
-  accountLockedUntil   DateTime?
-  
-  details     EmployeeDetails?
-  salary      SalaryStructure?
-  attendance  Attendance[]
-  leaves      LeaveRequest[]
-  payrolls    Payroll[]
-  messages    Message[]
-  sessions    Session[]
-  auditLogs   AuditLog[]
-  notifications Notification[]
-  notificationPreference NotificationPreference?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  passwordResetToken      String?
+  passwordResetExpiry     DateTime?
+  twoFactorEnabled        Boolean                 @default(false)
+  twoFactorSecret         String?
+  lastLoginAt             DateTime?
+  failedLoginAttempts     Int                     @default(0)
+  accountLockedUntil      DateTime?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  managerId               Int?
+  announcements           Announcement[]
+  attendance              Attendance[]
+  auditLogs               AuditLog[]
+  departmentsHeaded       Department[]            @relation("DepartmentHead")
+  documents               Document[]              @relation("DocumentOwner")
+  documentsUploaded       Document[]              @relation("DocumentUploadedBy")
+  details                 EmployeeDetails?
+  leaveBalances           LeaveBalance[]
+  leaves                  LeaveRequest[]
+  messages                Message[]
+  notifications           Notification[]
+  notificationPreference  NotificationPreference?
+  payrolls                Payroll[]
+  salary                  SalaryStructure?
+  sessions                Session[]
+  ticketsAssigned         SupportTicket[]         @relation("TicketAssignedTo")
+  ticketsRaised           SupportTicket[]         @relation("TicketRaisedBy")
+  ticketMessages          TicketMessage[]
+  manager                 User?                   @relation("ManagerReports", fields: [managerId], references: [id])
+  reports                 User[]                  @relation("ManagerReports")
 }
 
 model EmployeeDetails {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  user        User     @relation(fields: [userId], references: [id])
-  
-  firstName   String
-  lastName    String
-  phone       String?
-  address     String?
-  profilePic  String?
-  jobTitle    String
-  department  String
-  joiningDate DateTime
+  id                       Int         @id @default(autoincrement())
+  userId                   Int         @unique
+  firstName                String
+  lastName                 String
+  phone                    String?
+  address                  String?
+  profilePic               String?
+  jobTitle                 String
+  department               String
+  joiningDate              DateTime
+  aadharNumber             String?
+  bankAccountNo            String?
+  bankName                 String?
+  bloodGroup               String?
+  dateOfBirth              DateTime?
+  departmentId             Int?
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+  gender                   Gender?
+  ifscCode                 String?
+  maritalStatus            String?
+  panNumber                String?
+  uanNumber                String?
+  departmentRef            Department? @relation(fields: [departmentId], references: [id])
+  user                     User        @relation(fields: [userId], references: [id])
 }
 
 model SalaryStructure {
-  id                Int    @id @default(autoincrement())
-  userId            Int    @unique
-  user              User   @relation(fields: [userId], references: [id])
-  
-  wage              Float
-  
-  // Computed Components
-  basic             Float
-  hra               Float
-  stdAllowance      Float
-  performanceBonus  Float
-  lta               Float
-  fixedAllowance    Float
-  
-  // Deductions
-  pf                Float
-  profTax           Float
-  
-  netSalary         Float
+  id               Int   @id @default(autoincrement())
+  userId           Int   @unique
+  wage             Float
+  basic            Float
+  hra              Float
+  stdAllowance     Float
+  performanceBonus Float
+  lta              Float
+  fixedAllowance   Float
+  pf               Float
+  profTax          Float
+  netSalary        Float
+  user             User  @relation(fields: [userId], references: [id])
 }
 
 model Attendance {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  
-  date        DateTime @db.Date // Ensures we query by date easily
-  checkIn     DateTime?
-  checkOut    DateTime?
-  status      AttendanceStatus @default(ABSENT)
+  id         Int              @id @default(autoincrement())
+  userId     Int
+  date       DateTime         @db.Date
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     AttendanceStatus @default(ABSENT)
+  isLate     Boolean          @default(false)
+  notes      String?
+  totalHours Float?
+  user       User             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
 }
 
 model LeaveRequest {
-  id            Int      @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  
   type          LeaveType
   startDate     DateTime
   endDate       DateTime
   reason        String
   status        LeaveStatus @default(PENDING)
   adminComments String?
-  
-  appliedAt     DateTime @default(now())
+  appliedAt     DateTime    @default(now())
+  isHalfDay     Boolean     @default(false)
+  reviewedAt    DateTime?
+  reviewedBy    Int?
+  totalDays     Float       @default(1)
+  user          User        @relation(fields: [userId], references: [id])
+}
+
+model LeavePolicy {
+  id                 Int       @id @default(autoincrement())
+  leaveType          LeaveType @unique
+  annualEntitlement  Int       @default(12)
+  maxCarryForward    Int       @default(5)
+  maxConsecutiveDays Int       @default(5)
+  requiresApproval   Boolean   @default(true)
+  minNoticeDays      Int       @default(1)
+  isActive           Boolean   @default(true)
+  description        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model LeaveBalance {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  leaveType    LeaveType
+  year         Int
+  entitled     Float     @default(0)
+  used         Float     @default(0)
+  pending      Float     @default(0)
+  carryForward Float     @default(0)
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, leaveType, year])
 }
 
 model Payroll {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  
-  month       Int
-  year        Int
-  
-  // Calculation Breakdown (for auditability)
-  daysInMonth        Int      @default(30)
-  attendanceDays     Int      @default(0)
-  weekendDays        Int      @default(0)
-  leaveDays          Int      @default(0)
-  payableDays        Int      @default(0)
-  
-  // Earnings Breakdown
-  grossSalary        Float    @default(0)
-  earnedGross        Float    @default(0)
-  
-  // Deductions Breakdown
-  pfDeduction        Float    @default(0)
-  profTaxDeduction   Float    @default(0)
-  otherDeductions    Float    @default(0)
-  
-  // Legacy fields (kept for backward compatibility)
-  baseWage    Float
-  totalEarnings Float
-  totalDeductions Float
-  netPay      Float
-  
-  status      PayrollStatus @default(GENERATED)
-  createdAt   DateTime @default(now())
+  id               Int           @id @default(autoincrement())
+  userId           Int
+  month            Int
+  year             Int
+  daysInMonth      Int           @default(30)
+  attendanceDays   Int           @default(0)
+  weekendDays      Int           @default(0)
+  leaveDays        Int           @default(0)
+  payableDays      Int           @default(0)
+  grossSalary      Float         @default(0)
+  earnedGross      Float         @default(0)
+  pfDeduction      Float         @default(0)
+  profTaxDeduction Float         @default(0)
+  otherDeductions  Float         @default(0)
+  baseWage         Float
+  totalEarnings    Float
+  totalDeductions  Float
+  netPay           Float
+  status           PayrollStatus @default(GENERATED)
+  createdAt        DateTime      @default(now())
+  holidayDays      Int           @default(0)
+  user             User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month, year])
 }
 
 model Message {
   id        Int       @id @default(autoincrement())
   content   String
   userId    Int
-  user      User      @relation(fields: [userId], references: [id])
   createdAt DateTime  @default(now())
   isEdited  Boolean   @default(false)
   editedAt  DateTime?
   readBy    Int[]     @default([])
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Announcement {
+  id           Int                  @id @default(autoincrement())
+  title        String
+  content      String
+  priority     AnnouncementPriority @default(NORMAL)
+  createdById  Int
+  departmentId Int?
+  startsAt     DateTime             @default(now())
+  expiresAt    DateTime?
+  isPinned     Boolean              @default(false)
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  createdBy    User                 @relation(fields: [createdById], references: [id])
+  department   Department?          @relation(fields: [departmentId], references: [id])
+}
+
+model SupportTicket {
+  id           Int             @id @default(autoincrement())
+  ticketNumber String          @unique @default(cuid())
+  employeeId   Int
+  category     TicketCategory
+  subject      String
+  description  String
+  priority     TicketPriority  @default(MEDIUM)
+  status       TicketStatus    @default(OPEN)
+  assignedToId Int?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+  assignedTo   User?           @relation("TicketAssignedTo", fields: [assignedToId], references: [id])
+  employee     User            @relation("TicketRaisedBy", fields: [employeeId], references: [id])
+  messages     TicketMessage[]
+}
+
+model TicketMessage {
+  id             Int           @id @default(autoincrement())
+  ticketId       Int
+  senderId       Int
+  content        String
+  isInternal     Boolean       @default(false)
+  attachmentUrl  String?
+  attachmentName String?
+  createdAt      DateTime      @default(now())
+  sender         User          @relation(fields: [senderId], references: [id])
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id            Int          @id @default(autoincrement())
+  ownerId       Int?
+  uploadedById  Int
+  name          String
+  type          DocumentType
+  category      String?
+  fileUrl       String
+  fileSize      Int?
+  mimeType      String?
+  isCompanyWide Boolean      @default(false)
+  isVerified    Boolean      @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  owner         User?        @relation("DocumentOwner", fields: [ownerId], references: [id])
+  uploadedBy    User         @relation("DocumentUploadedBy", fields: [uploadedById], references: [id])
 }
 
 model Session {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  token       String   @unique
-  ipAddress   String?
-  userAgent   String?
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model AuditLog {
-  id          Int      @id @default(autoincrement())
-  userId      Int?
-  user        User?    @relation(fields: [userId], references: [id])
-  action      String
-  resource    String
-  resourceId  String?
-  details     String?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  action     String
+  resource   String
+  resourceId String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  
-  type        NotificationType
-  title       String
-  message     String
-  link        String?           // Optional link to navigate to
-  isRead      Boolean  @default(false)
-  emailSent   Boolean  @default(false)
-  
-  createdAt   DateTime @default(now())
-  readAt      DateTime?
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  emailSent Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  user      User             @relation(fields: [userId], references: [id])
 }
 
 model NotificationPreference {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  user        User     @relation(fields: [userId], references: [id])
-  
-  // Email preferences
-  emailLeaveUpdates     Boolean @default(true)
-  emailPayrollGenerated Boolean @default(true)
-  emailAnnouncements    Boolean @default(true)
-  emailAttendanceAlerts Boolean @default(false)
-  
-  // In-app preferences
-  inAppLeaveUpdates     Boolean @default(true)
-  inAppPayrollGenerated Boolean @default(true)
-  inAppAnnouncements    Boolean @default(true)
-  inAppAttendanceAlerts Boolean @default(true)
-  
-  updatedAt   DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @unique
+  emailLeaveUpdates     Boolean  @default(true)
+  emailPayrollGenerated Boolean  @default(true)
+  emailAnnouncements    Boolean  @default(true)
+  emailAttendanceAlerts Boolean  @default(false)
+  inAppLeaveUpdates     Boolean  @default(true)
+  inAppPayrollGenerated Boolean  @default(true)
+  inAppAnnouncements    Boolean  @default(true)
+  inAppAttendanceAlerts Boolean  @default(true)
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  HR_MANAGER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+  HOLIDAY
+  WEEKEND
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveType {
+  SICK
+  PAID
+  UNPAID
+  CASUAL
+  MATERNITY
+  PATERNITY
+  BEREAVEMENT
+  COMPENSATORY
+}
+
+enum PayrollStatus {
+  GENERATED
+  PAID
+}
+
+enum HolidayType {
+  NATIONAL
+  REGIONAL
+  COMPANY
+  OPTIONAL
 }
 
 enum NotificationType {
@@ -229,33 +429,61 @@ enum NotificationType {
   WELCOME
   PASSWORD_CHANGED
   PROFILE_UPDATED
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_RESOLVED
+  DOCUMENT_UPLOADED
+  BIRTHDAY
+  ANNIVERSARY
 }
 
-enum Role {
-  ADMIN
-  EMPLOYEE
+enum TicketCategory {
+  PAYROLL_ISSUE
+  LEAVE_DISCREPANCY
+  ATTENDANCE_ISSUE
+  IT_SUPPORT
+  POLICY_QUESTION
+  BENEFITS
+  HARASSMENT_COMPLAINT
+  WORKPLACE_SAFETY
+  GENERAL_INQUIRY
+  OTHER
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  HALF_DAY
-  LEAVE
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  AWAITING_RESPONSE
+  RESOLVED
+  CLOSED
 }
 
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
-enum LeaveType {
-  SICK
-  PAID
-  UNPAID
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
-enum PayrollStatus {
-  GENERATED
-  PAID
+enum DocumentType {
+  OFFER_LETTER
+  APPOINTMENT_LETTER
+  ID_PROOF
+  ADDRESS_PROOF
+  EDUCATION_CERTIFICATE
+  EXPERIENCE_LETTER
+  PAYSLIP
+  TAX_FORM
+  COMPANY_POLICY
+  HANDBOOK
+  NDA
+  CONTRACT
+  OTHER
 }
