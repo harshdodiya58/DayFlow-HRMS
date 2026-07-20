@@ -64,9 +64,20 @@ export async function GET(request) {
             }
         })
 
+        // Fetch holidays for this month
+        const holidays = await prisma.holiday.findMany({
+            where: {
+                date: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            }
+        })
+
         return NextResponse.json({
             attendance,
             leaves,
+            holidays,
             joiningDate: user?.details?.joiningDate || new Date()
         })
 
