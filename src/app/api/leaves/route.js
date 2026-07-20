@@ -10,12 +10,56 @@ export async function GET(request) {
 
         const payload = await verifyToken(token)
 
-        const leaves = await prisma.leaveRequest.findMany({
-            where: { userId: payload.id },
-            orderBy: { appliedAt: 'desc' }
-        })
+        const currentYear = new Date().getFullYear()
 
-        return NextResponse.json({ leaves })
+        let [leaves, balances, holidays] = await Promise.all([
+            // Leave history
+            prisma.leaveRequest.findMany({
+                where: { userId: payload.id },
+                orderBy: { appliedAt: 'desc' }
+            }),
+            // Leave balances for current year
+            prisma.leaveBalance.findMany({
+                where: { userId: payload.id, year: currentYear }
+            }),
+            // All holidays for this year
+            prisma.holiday.findMany({
+                where: { 
+                    date: { gte: new Date(new Date().getFullYear(), 0, 1) } 
+                },
+                orderBy: { date: 'asc' }
+            })
+        ])
+
+        // Auto-initialize leave balances if the employee has none for this year
+        if (balances.length === 0) {
+            const activePolicies = await prisma.leavePolicy.findMany({
+                where: { isActive: true }
+            })
+            
+            if (activePolicies.length > 0) {
+                const newBalances = activePolicies.map(policy => ({
+                    userId: payload.id,
+                    leaveType: policy.leaveType,
+                    year: currentYear,
+                    entitled: policy.annualEntitlement,
+                    used: 0,
+                    pending: 0,
+                    carryForward: 0
+                }))
+                
+                await prisma.leaveBalance.createMany({
+                    data: newBalances
+                })
+                
+                // Fetch the newly created balances
+                balances = await prisma.leaveBalance.findMany({
+                    where: { userId: payload.id, year: currentYear }
+                })
+            }
+        }
+
+        return NextResponse.json({ leaves, balances, holidays })
 
     } catch (e) {
         return NextResponse.json({ error: e.message }, { status: 500 })
