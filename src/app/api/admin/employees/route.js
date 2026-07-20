@@ -51,11 +51,16 @@ export async function GET(request) {
         const employees = users.map(u => ({
             id: u.id,
             name: u.details ? `${u.details.firstName} ${u.details.lastName}` : 'No Name',
+            firstName: u.details?.firstName,
+            lastName: u.details?.lastName,
             role: u.details?.jobTitle || 'Employee',
             employeeId: u.employeeId,
             department: u.details?.department || 'Unassigned',
             avatar: u.details?.profilePic,
             email: u.email,
+            phone: u.details?.phone,
+            address: u.details?.address,
+            joiningDate: u.details?.joiningDate,
             emailVerified: u.emailVerified,
             isActive: u.isActive
         }))
