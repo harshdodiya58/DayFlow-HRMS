@@ -3,9 +3,10 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Search, Filter, MoreHorizontal, User, Mail, Phone, MapPin, Trash2, Edit, ShieldCheck, ShieldAlert, Send, Loader2 } from "lucide-react"
+import { Search, Filter, MoreHorizontal, User, Mail, Phone, MapPin, Trash2, Edit, ShieldCheck, ShieldAlert, Send, Loader2, Eye } from "lucide-react"
 import EditEmployeeModal from "@/components/EditEmployeeModal"
 import { useToast } from "@/components/Toast"
+import Link from "next/link"
 
 function EmployeesContent() {
     const toast = useToast()
@@ -230,6 +231,12 @@ function EmployeesContent() {
                                                 >
                                                     <Edit className="w-4 h-4" />
                                                 </button>
+                                                <Link
+                                                    href={`/admin/employees/${emp.id}`}
+                                                    className="p-2 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Link>
                                                 <button
                                                     onClick={() => handleDelete(emp.id)}
                                                     className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
