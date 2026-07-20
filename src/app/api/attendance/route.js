@@ -37,6 +37,19 @@ export async function GET(request) {
     }
 }
 
+// Helper function to calculate distance in meters between two coordinates
+function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Radius of the earth in m
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; // Distance in m
+}
+
 // POST: Check In
 export async function POST(request) {
     try {
@@ -44,13 +57,55 @@ export async function POST(request) {
         if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         const payload = await verifyToken(token)
 
+        const body = await request.json().catch(() => ({}))
+        const { lat, lng } = body
+
         const now = new Date()
         const year = now.getFullYear()
         const month = String(now.getMonth() + 1).padStart(2, '0')
         const day = String(now.getDate()).padStart(2, '0')
         const todayStr = `${year}-${month}-${day}`
         const today = new Date(todayStr + 'T00:00:00.000Z')
-        const checkInTime = new Date() // Current time with timezone
+        const checkInTime = new Date()
+
+        // Fetch company settings for validation
+        const settings = await prisma.companySettings.findFirst()
+
+        if (settings && settings.attendanceValidation !== 'NONE') {
+            const mode = settings.attendanceValidation
+            const userIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.ip || 'unknown'
+
+            // IP Validation
+            if (mode === 'IP_ONLY' || mode === 'STRICT') {
+                if (!settings.allowedIps.includes(userIp)) {
+                    return NextResponse.json({ 
+                        error: `Check-in denied. Your IP address (${userIp}) is not authorized.` 
+                    }, { status: 403 })
+                }
+            }
+
+            // Location Validation
+            if (mode === 'LOCATION_ONLY' || mode === 'STRICT') {
+                if (!lat || !lng) {
+                    return NextResponse.json({ 
+                        error: 'Location is required for check-in. Please enable GPS/Location services.' 
+                    }, { status: 400 })
+                }
+                
+                if (settings.officeLat && settings.officeLng) {
+                    const distance = getDistanceFromLatLonInM(
+                        parseFloat(lat), parseFloat(lng), 
+                        settings.officeLat, settings.officeLng
+                    )
+                    
+                    if (distance > settings.officeRadius) {
+                        return NextResponse.json({ 
+                            error: `Check-in denied. You are ${Math.round(distance)}m away from the office. Allowed radius is ${settings.officeRadius}m.` 
+                        }, { status: 403 })
+                    }
+                }
+            }
+        }
 
         // Check if today is weekend (Saturday or Sunday)
         const dayOfWeek = now.getDay()
