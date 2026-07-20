@@ -16,19 +16,7 @@
 
 ---
 
-## 🚀 Beautiful User Interfaces
 
-### Employee Dashboard
-<div align="center">
-  <img src="./public/readme/dashboard.png" alt="Employee Dashboard" width="100%" />
-</div>
-
-### Admin Control Panel
-<div align="center">
-  <img src="./public/readme/admin.png" alt="Admin Dashboard" width="100%" />
-</div>
-
----
 
 ## ✨ Features That Empower
 
