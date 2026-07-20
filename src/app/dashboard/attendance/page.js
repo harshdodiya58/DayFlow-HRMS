@@ -8,6 +8,7 @@ export default function AttendancePage() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [attendanceData, setAttendanceData] = useState([])
     const [leavesData, setLeavesData] = useState([])
+    const [holidaysData, setHolidaysData] = useState([])
     const [joiningDate, setJoiningDate] = useState(null)
     const [loading, setLoading] = useState(true)
 
@@ -22,6 +23,7 @@ export default function AttendancePage() {
                 const data = await res.json()
                 setAttendanceData(data.attendance || [])
                 setLeavesData(data.leaves || [])
+                setHolidaysData(data.holidays || [])
                 setJoiningDate(data.joiningDate)
             }
         } catch (e) {
@@ -54,6 +56,7 @@ export default function AttendancePage() {
                 currentDate={currentDate}
                 attendanceData={attendanceData}
                 leavesData={leavesData}
+                holidaysData={holidaysData}
                 joiningDate={joiningDate}
                 onPrevMonth={handlePrevMonth}
                 onNextMonth={handleNextMonth}
