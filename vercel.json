@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/auto-payroll",
       "schedule": "59 23 * * *"
+    },
+    {
+      "path": "/api/cron/auto-attendance-checkout",
+      "schedule": "30 13 * * *"
     }
   ]
 }
