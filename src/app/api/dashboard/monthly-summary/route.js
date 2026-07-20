@@ -52,14 +52,12 @@ export async function GET(request) {
                 if (r.status === 'LEAVE') {
                     leaves++
                 } else if (r.status === 'PRESENT' || r.status === 'HALF_DAY') {
+                    present++
                     if (r.checkIn) {
                         const checkIn = new Date(r.checkIn)
                         const threshold = new Date(r.checkIn)
                         threshold.setHours(9, 30, 0, 0)
                         if (checkIn > threshold) late++
-                        else present++
-                    } else {
-                        present++
                     }
 
                     // Calculate hours
