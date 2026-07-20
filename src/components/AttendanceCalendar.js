@@ -7,6 +7,7 @@ export default function AttendanceCalendar({
     currentDate,
     attendanceData = [],
     leavesData = [],
+    holidaysData = [],
     joiningDate,
     onPrevMonth,
     onNextMonth,
@@ -71,6 +72,17 @@ export default function AttendanceCalendar({
 
         if (isOnLeave) {
             return { color: 'bg-purple-100 text-purple-700', status: 'Leave', record: null }
+        }
+
+        // Check if date is a holiday
+        const isHoliday = holidaysData.find(h => {
+            const hDate = new Date(h.date)
+            const hStr = `${hDate.getUTCFullYear()}-${String(hDate.getUTCMonth() + 1).padStart(2, '0')}-${String(hDate.getUTCDate()).padStart(2, '0')}`
+            return dateStr === hStr
+        })
+
+        if (isHoliday) {
+            return { color: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200', status: isHoliday.name, record: null, isHoliday: true }
         }
 
         // Check for weekends (Saturday & Sunday) BEFORE checking attendance records
